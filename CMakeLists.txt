@@ -3,4 +3,9 @@ project(thucal)
 
 set(CMAKE_CXX_STANDARD 11)
 
-add_executable(thucal main.cpp)
+find_package(Curses REQUIRED)
+include_directories(${CURSES_INCLUDE_DIR})
+
+add_executable(thucal main.cpp cal.cpp cal.h)
+
+target_link_libraries(thucal ${CURSES_LIBRARIES})
