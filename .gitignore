@@ -3,7 +3,7 @@
 ### Example user template
 
 # IntelliJ project files
-.idea/
+.idea/*
 out
 gen
-cmake-build-debug/
+cmake-build-debug/*
