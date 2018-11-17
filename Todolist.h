@@ -9,15 +9,39 @@
 #include <string>
 
 class Todolist {
-private:
-    std::map<int,> v;
 public:
+    Todolist();
 
-    void InsertTodo(int i, std::string s);
+    void IntoMode();
 
-    std::string DeleteTodo(int i, std::string s);
+    void LeaveMode();
 
-    void ChangeTodo(int i, int n, std::string s);
+    bool InsertTodo(int i, std::string s);
+
+    bool DeleteNowTodo();
+
+    bool ChangeNowTodo(std::string s);
+
+    std::string GetNowTodoValue();
+
+    int GetNowTodoKey();
+
+    void NextTodo();
+
+    void PrevTodo();
+
+    void GotoFisrtTodo();
+
+    void GotoLastTodo();
+
+    bool isend();
+
+    bool isbegin();
+
+//private:
+    std::multimap<int, std::string> v;
+    std::multimap<int, std::string>::iterator p;
+    int mode = 0;
 };
 
 
