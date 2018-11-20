@@ -6,15 +6,14 @@
 #define THUCAL_CALTIME_H
 
 
-class caltime {
+class Caltime {
 public:
-    caltime(int _year, int _month, int _monthday, int _hour, int _minute, int _second);
+    Caltime(int _year, int _month, int _monthday, int _hour = 8, int _minute = 0, int _second = 0);
 
-    bool operator<(const caltime &d) const;
+    bool operator<(const Caltime &d) const;
 
     void SetTime(int _year, int _month, int _monthday, int _hour, int _minute, int _second);
 
-private:
     int second;
     int minute;
     int hour;

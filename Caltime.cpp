@@ -2,10 +2,10 @@
 // Created by hukq1 on 2018/11/17.
 //
 
-#include "caltime.h"
+#include "Caltime.h"
 
 
-bool caltime::operator<(const caltime &d) const {
+bool Caltime::operator<(const Caltime &d) const {
     if (year < d.year)
         return true;
     if (year == d.year && month < d.month)
@@ -19,7 +19,7 @@ bool caltime::operator<(const caltime &d) const {
     return minute == d.minute && second < d.second;
 }
 
-caltime::caltime(int _year, int _month, int _monthday, int _hour, int _minute, int _second) {
+Caltime::Caltime(int _year, int _month, int _monthday, int _hour, int _minute, int _second) {
     int monthnumber[12] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
     if ((year % 4 == 0 && year % 100 != 0) || (year % 400 == 0)) {
         monthnumber[1] = 29;
@@ -49,7 +49,7 @@ caltime::caltime(int _year, int _month, int _monthday, int _hour, int _minute, i
     yearday += monthday;
 }
 
-void caltime::SetTime(int _year, int _month, int _monthday, int _hour, int _minute, int _second) {
+void Caltime::SetTime(int _year, int _month, int _monthday, int _hour, int _minute, int _second) {
     int monthnumber[12] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
     if ((year % 4 == 0 && year % 100 != 0) || (year % 400 == 0)) {
         monthnumber[1] = 29;
