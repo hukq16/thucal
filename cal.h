@@ -6,10 +6,21 @@
 #define THUCAL_CAL_H
 
 #include <ncurses.h>
+#include <iostream>
+#include <fstream>
+#include <cstdio>
+#include <cstring>
+#include <map>
+#include "Caltime.h"
+#include "VeventNoRepeat.h"
+#include "VeventRepeat.h"
 
-class cal {
+
+class Cal {
 public:
-    void test();
+    void ImportIcs(std::string FilePath);
+
+    std::multimap<Caltime, Vevent *> ical;
 };
 
 

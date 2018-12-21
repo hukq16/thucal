@@ -1,30 +1,30 @@
 #include <iostream>
-#include <ncurses.h>
+#include <curses.h>
 #include <unistd.h>
 #include <string>
 #include "Todolist.h"
+#include "Cal.h"
 using namespace std;
 
 int main(int argc, char const *argv[]) {
-    Todolist todolist;
-    todolist.IntoMode();
-    todolist.InsertTodo(2, "do math homework");
-    todolist.InsertTodo(5, "play game");
-    todolist.InsertTodo(5, "add new feature");
-    for (todolist.GotoFisrtTodo(); !todolist.isend(); todolist.NextTodo()) {
-        cout << todolist.GetNowTodoKey() << "  " << todolist.GetNowTodoValue() << endl;
-    }
+//    Cal mcal;
+//    mcal.ImportIcs("./thucal-2018-2019-秋.ics");
+//    for(auto it:mcal.ical)
+//    {
+//        if(it.second->repeat)
+//        {
+//            auto im = (VeventRepeat*)(it.second);
+//            it.first.print();
+//            std::cout << im->SUMMARY << std::endl << std::endl << std::endl;
+//
+//        } else
+//        {
+//            auto im = (VeventNoRepeat*)(it.second);
+//            it.first.print();
+//            std::cout << im->SUMMARY << std::endl << std::endl << std::endl;
+//        }
+//    }
 
-    todolist.GotoFisrtTodo();
-    todolist.NextTodo();
-    todolist.ChangeNowTodo("ssss");
-
-    todolist.NextTodo();
-    todolist.DeleteNowTodo();
-
-    for (todolist.GotoFisrtTodo(); !todolist.isend(); todolist.NextTodo()) {
-        cout << todolist.GetNowTodoKey() << "  " << todolist.GetNowTodoValue() << endl;
-    }
     return 0;
 
 }

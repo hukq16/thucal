@@ -2,6 +2,8 @@
 // Created by hukq1 on 2018/11/17.
 //
 
+#include <cstring>
+#include <iostream>
 #include "Caltime.h"
 
 
@@ -78,6 +80,102 @@ void Caltime::SetTime(int _year, int _month, int _monthday, int _hour, int _minu
     }
     yearday += monthday;
 }
+
+void Caltime::SetTime(char *time) {
+    int len = static_cast<int>(std::strlen(time));
+    if (len == 15) {
+        int _year = (time[0] - '0') * 1000 + (time[1] - '0') * 100 + (time[2] - '0') * 10 + (time[3] - '0');
+        int _month = (time[4] - '0') * 10 + (time[5] - '0');
+        int _monthday = (time[6] - '0') * 10 + (time[7] - '0');
+        int _hour = (time[9] - '0') * 10 + (time[10] - '0');
+        int _minute = (time[11] - '0') * 10 + (time[12] - '0');
+        int _second = (time[13] - '0') * 10 + (time[14] - '0');
+        SetTime(_year, _month, _monthday, _hour, _minute, _second);
+    } else if (len == 8) {
+        int _year = (time[0] - '0') * 1000 + (time[1] - '0') * 100 + (time[2] - '0') * 10 + (time[3] - '0');
+        int _month = (time[4] - '0') * 10 + (time[5] - '0');
+        int _monthday = (time[6] - '0') * 10 + (time[7] - '0');
+        int _hour = 8;
+        int _minute = 0;
+        int _second = 0;
+        SetTime(_year, _month, _monthday, _hour, _minute, _second);
+    } else {
+        SetTime(1970, 1, 1, 8, 0, 0);
+    }
+}
+
+void Caltime::AddDay(int count) {
+    int monthnumber[12] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+    if ((year % 4 == 0 && year % 100 != 0) || (year % 400 == 0)) {
+        monthnumber[1] = 29;
+    }
+    monthday += count;
+    while (monthday > monthnumber[month - 1]) {
+        monthday -= monthnumber[month - 1];
+        month++;
+        if (month > 12) {
+            year++;
+            month = 1;
+            if ((year % 4 == 0 && year % 100 != 0) || (year % 400 == 0)) {
+                monthnumber[1] = 29;
+            }
+        }
+    }
+    int helpyear = 0;
+    int helpmonth = 0;
+    if (month == 1 || month == 2) {
+        helpyear = year - 1;
+        helpmonth = 12 + month;
+    } else {
+        helpyear = year;
+        helpmonth = month;
+    }
+    int nY = helpyear / 100;
+    int nC = helpyear % 100;
+    weekday = (nY + nY / 4 + nC / 4 - 2 * nC + 26 * (helpmonth + 1) / 10 + monthday - 1) % 7;
+    yearday = 0;
+    for (int i = 0; i < month - 1; ++i) {
+        yearday += monthnumber[i];
+    }
+    yearday += monthday;
+}
+
+bool Caltime::AddDay(std::string freq) {
+    int monthnumber[12] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+    if ((year % 4 == 0 && year % 100 != 0) || (year % 400 == 0)) {
+        monthnumber[1] = 29;
+    }
+    if (freq == "DAILY") {
+        AddDay(1);
+    } else if (freq == "WEEKLY") {
+        AddDay(7);
+    } else if (freq == "MONTHLY") {
+        if (monthday <= monthnumber[month]) {
+            AddDay(monthnumber[month - 1]);
+        } else {
+            month++;
+            return false;
+        }
+    } else if (freq == "YEARLY") {
+        if ((year % 4 == 0 && year % 100 != 0) || (year % 400 == 0)) {
+            AddDay(366);
+        } else {
+            AddDay(365);
+        }
+    }
+    return true;
+}
+
+void Caltime::print() const {
+    std::cout << this->year << " " << this->month << " " << this->monthday << " " << this->hour << " " << this->minute
+              << " " << this->second << std::endl;
+}
+
+void Caltime::print() {
+    std::cout << this->year << " " << this->month << " " << this->monthday << " " << this->hour << " " << this->minute
+              << " " << this->second << std::endl;
+}
+
 
 
 
