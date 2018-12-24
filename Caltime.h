@@ -7,8 +7,9 @@
 
 
 #include <string>
+#include <cstring>
 #include <sstream>
-
+#include <ctime>
 class Caltime {
 public:
     Caltime(int _year = 0, int _month = 0, int _monthday = 0, int _hour = 8, int _minute = 0, int _second = 0);
@@ -19,14 +20,18 @@ public:
 
     void SetTime(char *time);
 
-    void AddDay(int count);
+    bool AddDay(int count);
 
+    bool PrvDay(int count);
     void print() const;
 
     void print();
 
     bool AddDay(std::string freq);
 
+    char **GetDateItem(Caltime d);
+
+    char **GetDateItem(tm d);
     int second;
     int minute;
     int hour;
@@ -36,6 +41,7 @@ public:
     int weekday;
     int yearday;
     int isdst = 0;
+    char **datenumber;
 };
 
 
