@@ -10,6 +10,7 @@
 #include <cstring>
 #include <sstream>
 #include <ctime>
+
 class Caltime {
 public:
     Caltime(int _year = 0, int _month = 0, int _monthday = 0, int _hour = 8, int _minute = 0, int _second = 0);
@@ -17,26 +18,42 @@ public:
     bool operator<(const Caltime &d) const;
 
     bool operator==(const Caltime &d) const;
+
     void SetTime(int _year, int _month, int _monthday, int _hour, int _minute, int _second);
 
     void SetTime(char *time);
 
     bool AddDay(int count);
 
-    bool PrvDay(int count);
-    void print() const;
-
-    void print();
-
     bool AddDay(std::string freq);
 
-    char **GetDateItem(Caltime d);
+    std::string stringout(int length);
 
-    std::string strintout();
+    int GetYear();
 
-    std::string strintout2();
+    int GetMonth();
 
-    std::string strintout3();
+    int GetMonthDay();
+
+    int GetHour();
+
+    int GetMinute();
+
+    int GetSecond();
+
+    void SetYear(int _year);
+
+    void SetMonth(int _month);
+
+    void SetMonthDay(int _monthday);
+
+    void SetHour(int _hour);
+
+    void SetMinute(int _minute);
+
+    void SetSecond(int _second);
+
+private:
     int second;
     int minute;
     int hour;
@@ -45,8 +62,6 @@ public:
     int year;
     int weekday;
     int yearday;
-    int isdst = 0;
-    char **datenumber;
 };
 
 

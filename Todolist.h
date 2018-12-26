@@ -12,36 +12,13 @@ class Todolist {
 public:
     Todolist();
 
-    void IntoMode();
-
-    void LeaveMode();
-
     bool InsertTodo(int i, std::string s);
 
-    bool DeleteNowTodo();
-
-    bool ChangeNowTodo(std::string s);
-
-    std::string GetNowTodoValue();
-
-    int GetNowTodoKey();
-
-    void NextTodo();
-
-    void PrevTodo();
-
-    void GotoFisrtTodo();
-
-    void GotoLastTodo();
-
-    bool isend();
-
-    bool isbegin();
-
-//private:
     std::multimap<int, std::string> v;
-    std::multimap<int, std::string>::iterator p;
-    int mode = 0;
+
+    void ImportTodo(std::string FilePath);
+
+    void OutputTodo(std::string FilePath);
 };
 
 

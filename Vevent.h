@@ -12,11 +12,7 @@
 #include <fstream>
 #include <queue>
 
-class Vevent {
-public:
-    friend class Caltime;
-
-//    friend std::istream & operator >> (std::istream &in, Vevent &obj);
+struct Vevent {
     std::string SUMMARY;
     std::string LOCATION;
     std::string DESCRIPTION;
@@ -25,7 +21,6 @@ public:
     std::string TRANSP;
     std::string STATUS;
     bool repeat;
-//    void clear();
 };
 
 

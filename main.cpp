@@ -101,7 +101,11 @@ std::string popdate(const char *title, const char *label);
 
 int popscale(const char *title, const char *label);
 
-int UpdateVeventItem(int day, int month, int year, char *const *Veventlistitem);
+bool IsLeapYear(int year);
+
+bool IsLegal(char *time);
+
+int UpdateVeventItem(int year, int month, int day, char *const *Veventlistitem);
 
 void RefreshVevent(char *const *Veventlistitem, const CDKCALENDAR *calendar);
 
@@ -121,7 +125,7 @@ CDKCALENDAR *CalWidget;
 int main(int argc, char const *argv[]) {
 
     vevent.ImportIcs("database.ics");
-
+    todolist.ImportTodo("todolist.txt");
     int CalWinstartx, CalWinstarty, CalWinwidth, CalWinheight;
     int TodoWinstartx, TodoWinstarty, TodoWinwidth, TodoWinheight;
     int VeventWinstartx, VeventWinstarty, VeventWinwidth, VeventWinheight;
@@ -178,17 +182,17 @@ int main(int argc, char const *argv[]) {
         i++;
     }
 
-
-    const char *mesg[3];
-
-    mesg[0] = "Press h for help";
-    mesg[1] = "";
-    mesg[2] = "<C>Press any key to continue.";
-    popupLabel(cdkscreen, (CDK_CSTRING2) mesg, 3);
-
+    if (i == 0) {
+        sprintf(todolistitem[0], " ");
+        i = 1;
+    }
 
     int j = UpdateVeventItem(day, month, year, Veventlistitem);
 
+    if (j == 0) {
+        sprintf(Veventlistitem[0], " ");
+        j = 1;
+    }
 
     CalWidget = newCDKCalendar(cdkscreen, RIGHT, CalWinstarty,
                                "<C>Calendar", day, month, year,
@@ -252,8 +256,16 @@ int main(int argc, char const *argv[]) {
     bindCDKObject(vSCROLL, Todolistwidget, 'o', OutputIcsCB, 0);
     bindCDKObject(vSCROLL, Veventwidget, 'o', OutputIcsCB, 0);
 
+    const char *mesg[3];
 
+    mesg[0] = "Press h for help";
+    mesg[1] = "";
+    mesg[2] = "<C>Press any key to continue.";
+
+    popupLabel(cdkscreen, (CDK_CSTRING2) mesg, 3);
     refreshCDKScreen(cdkscreen);
+
+    RefreshVevent(Veventlistitem, CalWidget);
     traverseCDKScreen(cdkscreen);
 
 
@@ -268,6 +280,7 @@ int main(int argc, char const *argv[]) {
     destroyCDKCalendar(CalWidget);
     destroyCDKScreen(cdkscreen);
     endCDK();
+    todolist.OutputTodo("todolist.txt");
     vevent.OutputIcs("database.ics");
     return 0;
 }
@@ -368,7 +381,7 @@ static int addVeventCB(EObjectType cdktype GCC_UNUSED,
         strcpy(charstarttime, starttime.c_str());
         f_vec->DTSTART.STIME.SetTime(charstarttime);
         char *charendtime = new char[20];
-        strcpy(charendtime, starttime.c_str());
+        strcpy(charendtime, endtime.c_str());
         f_vec->DTEND.STIME.SetTime(charendtime);
         std::stringstream ss2;
         ss2 << time(0) << '.' << "34214723058046557546435" << "@thucal";
@@ -376,7 +389,7 @@ static int addVeventCB(EObjectType cdktype GCC_UNUSED,
         f_vec->RRULE.COUNT = repeatcount;
         Caltime itime = f_vec->DTSTART.STIME;
         for (int i = 0; i < f_vec->RRULE.COUNT; ++i) {
-            vevent.ical.insert(std::pair<Caltime, Vevent *>(itime, f_vec));
+            vevent.InsertItem(std::pair<Caltime, Vevent *>(itime, f_vec));
             itime.AddDay(f_vec->RRULE.FREQ);
         }
     } else {
@@ -394,12 +407,12 @@ static int addVeventCB(EObjectType cdktype GCC_UNUSED,
         strcpy(charstarttime, starttime.c_str());
         f_vec->DTSTART.STIME.SetTime(charstarttime);
         char *charendtime = new char[20];
-        strcpy(charendtime, starttime.c_str());
+        strcpy(charendtime, endtime.c_str());
         f_vec->DTEND.STIME.SetTime(charendtime);
         std::stringstream ss2;
         ss2 << time(0) << '.' << "34214723058046557546435" << "@thucal";
         ss2 >> f_vec->UID;
-        vevent.ical.insert(std::pair<Caltime, Vevent *>(f_vec->DTSTART.STIME, f_vec));
+        vevent.InsertItem(std::pair<Caltime, Vevent *>(f_vec->DTSTART.STIME, f_vec));
     }
 
     RefreshVevent(Veventlistitem, CalWidget);
@@ -416,7 +429,7 @@ static int deleteVeventCB(EObjectType cdktype GCC_UNUSED,
     char **Veventlistitem = (char **) clientData;
 
     Caltime today(CalWidget->year, CalWidget->month, CalWidget->day, 0, 0, 0);
-    auto deleteitem = vevent.ical.lower_bound(today);
+    auto deleteitem = vevent.FindLowerBound(today);
     for (int i = 0; i < veventwidget->currentItem; ++i) {
         deleteitem++;
     }
@@ -443,6 +456,8 @@ static int deletetodolistCB(EObjectType cdktype GCC_UNUSED,
     char **todolistitem = (char **) clientData;
 
     auto deleteitem = todolist.v.begin();
+    if (todolist.v.empty())
+        return (FALSE);
     for (int i = 0; i < todolistwidget->currentItem; ++i) {
         deleteitem++;
     }
@@ -511,7 +526,7 @@ static int editVeventCB(EObjectType cdktype GCC_UNUSED,
     char **Veventlistitem = (char **) clientData;
     Caltime today(CalWidget->year, CalWidget->month, CalWidget->day, 0, 0, 0);
 
-    auto edititem = vevent.ical.lower_bound(today);
+    auto edititem = vevent.FindLowerBound(today);
     for (int i = 0; i < veventwidget->currentItem; ++i) {
         edititem++;
     }
@@ -542,14 +557,14 @@ static int editVeventCB(EObjectType cdktype GCC_UNUSED,
         std::string location = popentry(loctitle, loclabel, locaconsttemp);
 
         char starttemp[256];
-        strcpy(starttemp, editptr->DTSTART.STIME.strintout2().c_str());
+        strcpy(starttemp, editptr->DTSTART.STIME.stringout(14).c_str());
         const char *startconsttemp = starttemp;
         const char *startimetitle = "Enter start time.";
         const char *startimelabel = "</U/5>start time:<!U!5>";
         std::string starttime = poptime(startimetitle, startimelabel, startconsttemp);
 
         char endtemp[256];
-        strcpy(endtemp, editptr->DTEND.STIME.strintout2().c_str());
+        strcpy(endtemp, editptr->DTEND.STIME.stringout(14).c_str());
         const char *endconsttemp = endtemp;
         const char *endtimetitle = "Enter end time.";
         const char *endtimelabel = "</U/5>end time:<!U!5>";
@@ -576,10 +591,10 @@ static int editVeventCB(EObjectType cdktype GCC_UNUSED,
 
         Caltime deletetime = editptr->DTSTART.STIME;
         for (int i = 0; i < editptr->RRULE.COUNT; ++i) {
-            auto pair2 = vevent.ical.equal_range(deletetime);
+            auto pair2 = vevent.FindEqualRange(deletetime);
             for (auto j = pair2.first; j != pair2.second; j++) {
                 if (j->second == editptr) {
-                    vevent.ical.erase(j);
+                    vevent.Erase(j);
                     break;
                 }
             }
@@ -603,7 +618,7 @@ static int editVeventCB(EObjectType cdktype GCC_UNUSED,
         strcpy(charstarttime, starttime.c_str());
         f_vec->DTSTART.STIME.SetTime(charstarttime);
         char *charendtime = new char[20];
-        strcpy(charendtime, starttime.c_str());
+        strcpy(charendtime, endtime.c_str());
         f_vec->DTEND.STIME.SetTime(charendtime);
         std::stringstream ss2;
         ss2 << time(0) << '.' << "34214723058046557546435" << "@thucal";
@@ -611,7 +626,7 @@ static int editVeventCB(EObjectType cdktype GCC_UNUSED,
         f_vec->RRULE.COUNT = repeatcount;
         Caltime itime = f_vec->DTSTART.STIME;
         for (int i = 0; i < f_vec->RRULE.COUNT; ++i) {
-            vevent.ical.insert(std::pair<Caltime, Vevent *>(itime, f_vec));
+            vevent.InsertItem(std::pair<Caltime, Vevent *>(itime, f_vec));
             itime.AddDay(f_vec->RRULE.FREQ);
         }
 
@@ -641,14 +656,14 @@ static int editVeventCB(EObjectType cdktype GCC_UNUSED,
         std::string location = popentry(loctitle, loclabel, locaconsttemp);
 
         char starttemp[256];
-        strcpy(starttemp, editptr->DTSTART.STIME.strintout2().c_str());
+        strcpy(starttemp, editptr->DTSTART.STIME.stringout(14).c_str());
         const char *startconsttemp = starttemp;
         const char *startimetitle = "Enter start time.";
         const char *startimelabel = "</U/5>start time:<!U!5>";
         std::string starttime = poptime(startimetitle, startimelabel, startconsttemp);
 
         char endtemp[256];
-        strcpy(endtemp, editptr->DTEND.STIME.strintout2().c_str());
+        strcpy(endtemp, editptr->DTEND.STIME.stringout(14).c_str());
         const char *endconsttemp = starttemp;
         const char *endtimetitle = "Enter end time.";
         const char *endtimelabel = "</U/5>end time:<!U!5>";
@@ -656,10 +671,10 @@ static int editVeventCB(EObjectType cdktype GCC_UNUSED,
 
 
         Caltime deletetime = editptr->DTSTART.STIME;
-        auto pair2 = vevent.ical.equal_range(deletetime);
+        auto pair2 = vevent.FindEqualRange(deletetime);
         for (auto j = pair2.first; j != pair2.second; j++) {
             if (j->second == editptr) {
-                vevent.ical.erase(j);
+                vevent.Erase(j);
                 break;
             }
         }
@@ -680,12 +695,12 @@ static int editVeventCB(EObjectType cdktype GCC_UNUSED,
         strcpy(charstarttime, starttime.c_str());
         f_vec->DTSTART.STIME.SetTime(charstarttime);
         char *charendtime = new char[20];
-        strcpy(charendtime, starttime.c_str());
+        strcpy(charendtime, endtime.c_str());
         f_vec->DTEND.STIME.SetTime(charendtime);
         std::stringstream ss2;
         ss2 << time(0) << '.' << "34214723058046557546435" << "@thucal";
         ss2 >> f_vec->UID;
-        vevent.ical.insert(std::pair<Caltime, Vevent *>(f_vec->DTSTART.STIME, f_vec));
+        vevent.InsertItem(std::pair<Caltime, Vevent *>(f_vec->DTSTART.STIME, f_vec));
 
 
     }
@@ -706,7 +721,7 @@ static int popeventdetailCB(EObjectType cdktype GCC_UNUSED,
     char **Veventlistitem = (char **) clientData;
     Caltime today(CalWidget->year, CalWidget->month, CalWidget->day, 0, 0, 0);
 
-    auto pointevent = vevent.ical.lower_bound(today);
+    auto pointevent = vevent.FindLowerBound(today);
     for (int i = 0; i < veventwidget->currentItem; ++i) {
         pointevent++;
     }
@@ -718,8 +733,8 @@ static int popeventdetailCB(EObjectType cdktype GCC_UNUSED,
         }
         sprintf(msg[0], "SUMMARY:%s", pointptr->SUMMARY.c_str());
         sprintf(msg[1], "DESCRIPTION:%s", pointptr->DESCRIPTION.c_str());
-        sprintf(msg[2], "START TIME:%s", pointptr->DTSTART.STIME.strintout3().c_str());
-        sprintf(msg[3], "END TIME:%s", pointptr->DTEND.STIME.strintout3().c_str());
+        sprintf(msg[2], "START TIME:%s", pointptr->DTSTART.STIME.stringout(19).c_str());
+        sprintf(msg[3], "END TIME:%s", pointptr->DTEND.STIME.stringout(19).c_str());
         sprintf(msg[4], "LOCATION:%s", pointptr->LOCATION.c_str());
         sprintf(msg[5], "REPEAT KIND:%s", pointptr->RRULE.FREQ.c_str());
         sprintf(msg[6], "REPEAT COUNT:%d", pointptr->RRULE.COUNT);
@@ -735,8 +750,8 @@ static int popeventdetailCB(EObjectType cdktype GCC_UNUSED,
         }
         sprintf(msg[0], "SUMMARY:%s", pointptr->SUMMARY.c_str());
         sprintf(msg[1], "DESCRIPTION:%s", pointptr->DESCRIPTION.c_str());
-        sprintf(msg[2], "START TIME:%s", pointptr->DTSTART.STIME.strintout3().c_str());
-        sprintf(msg[3], "END TIME:%s", pointptr->DTEND.STIME.strintout3().c_str());
+        sprintf(msg[2], "START TIME:%s", pointptr->DTSTART.STIME.stringout(19).c_str());
+        sprintf(msg[3], "END TIME:%s", pointptr->DTEND.STIME.stringout(19).c_str());
         sprintf(msg[4], "LOCATION:%s", pointptr->LOCATION.c_str());
         sprintf(msg[5], " ");
         sprintf(msg[6], "<C>Press any key to continue.");
@@ -895,12 +910,12 @@ static int TodolisthelpCB(EObjectType cdktype GCC_UNUSED,
     popupLabel(cdkscreen, msg, 17);
 }
 
-int UpdateVeventItem(int day, int month, int year, char *const *Veventlistitem) {
+int UpdateVeventItem(int year, int month, int day, char *const *Veventlistitem) {
     Caltime today(year, month, day, 0, 0, 0);
 
-    auto mbegin = vevent.ical.lower_bound(today);
+    auto mbegin = vevent.FindLowerBound(today);
     Caltime tomorrow(year, month, day, 23, 59, 59);
-    auto mend = vevent.ical.upper_bound(tomorrow);
+    auto mend = vevent.FindUpperBound(tomorrow);
     int j = 0;
     for (auto it = mbegin; it != mend; ++it) {
         stringstream sstream;
@@ -908,16 +923,16 @@ int UpdateVeventItem(int day, int month, int year, char *const *Veventlistitem) 
             auto *item = (VeventRepeat *) it->second;
             char summary[100];
             strcpy(summary, item->SUMMARY.c_str());
-            sprintf(Veventlistitem[j], "%02d:%02d:%02d->%02d:%02d:%02d  %s", item->DTSTART.STIME.hour,
-                    item->DTSTART.STIME.minute, item->DTSTART.STIME.second, item->DTEND.STIME.hour,
-                    item->DTEND.STIME.minute, item->DTEND.STIME.second, summary);
+            sprintf(Veventlistitem[j], "%02d:%02d:%02d->%02d:%02d:%02d  %s", item->DTSTART.STIME.GetHour(),
+                    item->DTSTART.STIME.GetMinute(), item->DTSTART.STIME.GetSecond(), item->DTEND.STIME.GetHour(),
+                    item->DTEND.STIME.GetMinute(), item->DTEND.STIME.GetSecond(), summary);
         } else {
             auto *item = (VeventNoRepeat *) it->second;
             char summary[100];
             strcpy(summary, item->SUMMARY.c_str());
-            sprintf(Veventlistitem[j], "%02d:%02d:%02d->%02d:%02d:%02d  %s", item->DTSTART.STIME.hour,
-                    item->DTSTART.STIME.minute, item->DTSTART.STIME.second, item->DTEND.STIME.hour,
-                    item->DTEND.STIME.minute, item->DTEND.STIME.second, summary);
+            sprintf(Veventlistitem[j], "%02d:%02d:%02d->%02d:%02d:%02d  %s", item->DTEND.STIME.GetHour(),
+                    item->DTEND.STIME.GetMinute(), item->DTEND.STIME.GetSecond(), item->DTEND.STIME.GetHour(),
+                    item->DTEND.STIME.GetMinute(), item->DTEND.STIME.GetSecond(), summary);
         }
         j++;
     }
@@ -930,10 +945,10 @@ void DeleteVeventItem(
         VeventRepeat *deleterepeat = (VeventRepeat *) deleteitem->second;
         Caltime deletetime = deleterepeat->DTSTART.STIME;
         for (int i = 0; i < deleterepeat->RRULE.COUNT; ++i) {
-            auto pair2 = vevent.ical.equal_range(deletetime);
+            auto pair2 = vevent.FindEqualRange(deletetime);
             for (auto j = pair2.first; j != pair2.second; j++) {
                 if (j->second == deleterepeat) {
-                    vevent.ical.erase(j);
+                    vevent.Erase(j);
                     break;
                 }
             }
@@ -943,10 +958,10 @@ void DeleteVeventItem(
     } else {
         VeventNoRepeat *deletenorepeat = (VeventNoRepeat *) deleteitem->second;
         Caltime deletetime = deletenorepeat->DTSTART.STIME;
-        auto pair2 = vevent.ical.equal_range(deletetime);
+        auto pair2 = vevent.FindEqualRange(deletetime);
         for (auto j = pair2.first; j != pair2.second; j++) {
             if (j->second == deletenorepeat) {
-                vevent.ical.erase(j);
+                vevent.Erase(j);
                 break;
             }
         }
@@ -957,6 +972,10 @@ void DeleteVeventItem(
 
 void RefreshVevent(char *const *Veventlistitem, const CDKCALENDAR *calendar) {
     int j = UpdateVeventItem(calendar->year, calendar->month, calendar->day, Veventlistitem);
+    if (j == 0) {
+        sprintf(Veventlistitem[0], " ");
+        j = 1;
+    }
     eraseCDKScroll(Veventwidget);
     setCDKScroll(Veventwidget, (CDK_CSTRING2) Veventlistitem, j, FALSE, A_REVERSE, TRUE);
     drawCDKScroll(Veventwidget, TRUE);
@@ -969,6 +988,11 @@ void RefreshTodolist(char *const *todolistitem) {
         sstream << it.first << " " << it.second << endl;
         sstream.getline(todolistitem[i], VECTORLENGTH);
         i++;
+    }
+
+    if (i == 0) {
+        sprintf(todolistitem[0], " ");
+        i = 1;
     }
     eraseCDKScroll(Todolistwidget);
     setCDKScroll(Todolistwidget, (CDK_CSTRING2) todolistitem, i, FALSE, A_REVERSE, TRUE);
@@ -1012,17 +1036,33 @@ std::string poptime(const char *title, const char *label) {
     char temp[256];
     char *info;
     char *mixed;
-    const char *Overlay = "____/__/__-__:__:__";
-    const char *plate = "####/##/##-##:##:##";
-    CDKTEMPLATE *cdktemplate = 0;
+    int state = 1;
+    do {
+        const char *Overlay = "____/__/__-__:__:__";
+        const char *plate = "####/##/##-##:##:##";
+        CDKTEMPLATE *cdktemplate = 0;
 
-    cdktemplate = newCDKTemplate(cdkscreen, CENTER, CENTER, title, label, plate, Overlay, TRUE, FALSE);
-    info = activateCDKTemplate(cdktemplate, 0);
-    std::string time = info;
-    destroyCDKEntry(cdktemplate);
-    eraseCDKScreen(cdkscreen);
-    refreshCDKScreen(cdkscreen);
-    return time;
+        cdktemplate = newCDKTemplate(cdkscreen, CENTER, CENTER, title, label, plate, Overlay, TRUE, FALSE);
+        info = activateCDKTemplate(cdktemplate, 0);
+        if (IsLegal(info)) {
+            state = 0;
+            std::string time = info;
+            destroyCDKEntry(cdktemplate);
+            eraseCDKScreen(cdkscreen);
+            refreshCDKScreen(cdkscreen);
+            return time;
+        }
+        destroyCDKEntry(cdktemplate);
+        const char *mesg[3];
+
+        mesg[0] = "time is not legal!";
+        mesg[1] = "";
+        mesg[2] = "<C>please enter new time.";
+
+        popupLabel(cdkscreen, (CDK_CSTRING2) mesg, 3);
+        eraseCDKScreen(cdkscreen);
+        refreshCDKScreen(cdkscreen);
+    } while (state);
 }
 
 
@@ -1031,18 +1071,34 @@ std::string poptime(const char *title, const char *label, const char *val) {
     char temp[256];
     char *info;
     char *mixed;
-    const char *Overlay = "____/__/__-__:__:__";
-    const char *plate = "####/##/##-##:##:##";
-    CDKTEMPLATE *cdktemplate = 0;
+    int state = 1;
+    do {
+        const char *Overlay = "____/__/__-__:__:__";
+        const char *plate = "####/##/##-##:##:##";
+        CDKTEMPLATE *cdktemplate = 0;
 
-    cdktemplate = newCDKTemplate(cdkscreen, CENTER, CENTER, title, label, plate, Overlay, TRUE, FALSE);
-    setCDKTemplate(cdktemplate, val, TRUE);
-    info = activateCDKTemplate(cdktemplate, 0);
-    std::string time = info;
-    destroyCDKEntry(cdktemplate);
-    eraseCDKScreen(cdkscreen);
-    refreshCDKScreen(cdkscreen);
-    return time;
+        cdktemplate = newCDKTemplate(cdkscreen, CENTER, CENTER, title, label, plate, Overlay, TRUE, FALSE);
+        setCDKTemplate(cdktemplate, val, TRUE);
+        info = activateCDKTemplate(cdktemplate, 0);
+        if (IsLegal(info)) {
+            state = 0;
+            std::string time = info;
+            destroyCDKEntry(cdktemplate);
+            eraseCDKScreen(cdkscreen);
+            refreshCDKScreen(cdkscreen);
+            return time;
+        }
+        destroyCDKEntry(cdktemplate);
+        const char *mesg[3];
+
+        mesg[0] = "time is not legal!";
+        mesg[1] = "";
+        mesg[2] = "<C>please enter new time.";
+
+        popupLabel(cdkscreen, (CDK_CSTRING2) mesg, 3);
+        eraseCDKScreen(cdkscreen);
+        refreshCDKScreen(cdkscreen);
+    } while (state);
 }
 
 
@@ -1074,4 +1130,38 @@ int popscale(const char *title, const char *label) {
     eraseCDKScreen(cdkscreen);
     refreshCDKScreen(cdkscreen);
     return iimport;
+}
+
+
+bool IsLeapYear(int year) {
+    if (((year % 4 == 0) && (year % 100 != 0)) || (year % 400 == 0))
+        return true;
+    return false;
+}
+
+bool IsLegal(char *time) {
+    int year;
+    int mon;
+    int day;
+    int hour;
+    int minute;
+    int second;
+    year = (time[0] - '0') * 1000 + (time[1] - '0') * 100 + (time[2] - '0') * 10 + (time[3] - '0');
+    mon = (time[4] - '0') * 10 + (time[5] - '0');
+    day = (time[6] - '0') * 10 + (time[7] - '0');
+    hour = (time[8] - '0') * 10 + (time[9] - '0');
+    minute = (time[10] - '0') * 10 + (time[11] - '0');
+    second = (time[12] - '0') * 10 + (time[13] - '0');
+    if (year < 0 || mon <= 0 || mon > 12 || day <= 0 || day > 31 || hour >= 24 || hour < 0 || minute >= 60 ||
+        minute < 0 || second >= 60 || second < 0)
+        return false;
+
+    if (1 == mon || 3 == mon || 5 == mon || 7 == mon || 8 == mon || 10 == mon || 12 == mon) {
+        return true;
+    }
+    if (IsLeapYear(year)) {
+        return !(2 == mon && (28 == day || 30 == day || 31 == day));
+    } else {
+        return !(2 == mon && (29 == day || 30 == day || 31 == day));
+    }
 }

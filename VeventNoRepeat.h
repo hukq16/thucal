@@ -7,8 +7,7 @@
 
 #include "Vevent.h"
 
-class VeventNoRepeat : public Vevent {
-public:
+struct VeventNoRepeat : public Vevent {
     struct time {
         std::string VALUE;
         Caltime STIME;

@@ -5,72 +5,49 @@
 //
 
 #include "Todolist.h"
+#include <iostream>
+#include <fstream>
+#include <unistd.h>
+#include <memory.h>
 
 Todolist::Todolist() {
 }
 
 bool Todolist::InsertTodo(int i, std::string s) {
-    if (v.empty() && mode)
-        p = v.begin();
     if (i <= 0 || i > 9)
         return false;
     v.insert(std::pair<int, std::string>(i, s));
     return true;
 }
 
-bool Todolist::DeleteNowTodo() {
-    if (v.empty() || !mode)
-        return false;
-    p = v.erase(p);
-    return true;
+void Todolist::ImportTodo(std::string FilePath) {
+    std::ifstream file(FilePath, std::ios::in);
+    if (!file) {
+        std::cerr << "file not exist!" << std::endl;
+        return;
+    }
+    while (!file.eof()) {
+        char *summary = new char[256];
+        file.getline(summary, 256);
+        if (strlen(summary) == 0)
+            return;
+        int importance = atoi(strtok_r(summary, " ", &summary));
+        std::string summ = summary;
+        InsertTodo(importance, summ);
+    }
+    file.close();
 }
 
-bool Todolist::ChangeNowTodo(std::string s) {
-    if (v.empty() || !mode)
-        return false;
-    p->second = std::move(s);
-    return true;
+void Todolist::OutputTodo(std::string FilePath) {
+    std::ofstream file(FilePath, std::ios::out);
+    for (const auto &in :v) {
+        file << in.first << " " << in.second << "\n";
+    }
+    file.close();
+    std::ifstream ifile(FilePath, std::ios::in);
+    ifile.seekg(0, std::ios::end);
+    long long int n = ifile.tellg();
+    ifile.close();
+    truncate(FilePath.c_str(), n - 1);
 }
 
-void Todolist::NextTodo() {
-    if (p != v.end())
-        p++;
-}
-
-void Todolist::PrevTodo() {
-    if (p != v.begin())
-        p--;
-}
-
-void Todolist::GotoFisrtTodo() {
-    p = v.begin();
-}
-
-void Todolist::GotoLastTodo() {
-    p = v.end();
-}
-
-std::string Todolist::GetNowTodoValue() {
-    return p->second;
-}
-
-bool Todolist::isend() {
-    return p == v.end();
-}
-
-bool Todolist::isbegin() {
-    return p == v.begin();
-}
-
-int Todolist::GetNowTodoKey() {
-    return p->first;
-}
-
-void Todolist::IntoMode() {
-    mode = 1;
-    p = v.begin();
-}
-
-void Todolist::LeaveMode() {
-    mode = 0;
-}

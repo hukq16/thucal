@@ -3,10 +3,16 @@
 //
 
 #include "Cal.h"
-#include <libxl.h>
 
+#include <iostream>
+#include <fstream>
+#include <cstdio>
+#include <cstring>
+#include <libxl.h>
+#include <random>
 #include "VeventNoRepeat.h"
 #include "VeventRepeat.h"
+
 
 void Cal::ImportIcs(std::string FilePath) {
     std::ifstream file(FilePath, std::ios::in);
@@ -22,6 +28,8 @@ void Cal::ImportIcs(std::string FilePath) {
     s[n] = '\0';
     file.close();
     char *p = std::strstr(s, "BEGIN:VEVENT");
+    if (p == NULL)
+        return;
     std::queue<char *> pvevent;
     *(p - 1) = '\0';
     pvevent.push(p);
@@ -68,7 +76,6 @@ void Cal::ImportExcel(std::string FilePath, int year, int month, int day) {
             for (int row = 2; row <= 7; ++row) {
                 for (int col = 1; col <= 7; ++col) {
                     libxl::CellType cellType = sheet->cellType(row, col);
-//                    std::cout << "(" << row << ", " << col << ") = ";
                     if (sheet->isFormula(row, col)) {
                         const char *s = (sheet->readFormula(row, col));
                     } else {
@@ -165,8 +172,8 @@ void Cal::OutputIcs(std::string FilePath) {
                 file << "SUMMARY:" << item->SUMMARY << "\n";
                 file << "LOCATION:" << item->LOCATION << "\n";
                 file << "DESCRIPTION:" << item->DESCRIPTION << "\n";
-                file << "DTSTART;TZID=" << item->DTSTART.TZID << ":" << item->DTSTART.STIME.strintout() << "\n";
-                file << "DTEND;TZID=" << item->DTSTART.TZID << ":" << item->DTEND.STIME.strintout() << "\n";
+                file << "DTSTART;TZID=" << item->DTSTART.TZID << ":" << item->DTSTART.STIME.stringout(15) << "\n";
+                file << "DTEND;TZID=" << item->DTSTART.TZID << ":" << item->DTEND.STIME.stringout(15) << "\n";
                 file << "RRULE:FREQ=" << item->RRULE.FREQ << ";COUNT=" << item->RRULE.COUNT << "\n";
                 file << "SEQUENCE:" << item->SEQUENCE << "\n";
                 file << "UID:" << item->UID << "\n";
@@ -181,8 +188,8 @@ void Cal::OutputIcs(std::string FilePath) {
             file << "SUMMARY:" << item->SUMMARY << "\n";
             file << "LOCATION:" << item->LOCATION << "\n";
             file << "DESCRIPTION:" << item->DESCRIPTION << "\n";
-            file << "DTSTART;TZID=" << item->DTSTART.VALUE << ":" << item->DTSTART.STIME.strintout() << "\n";
-            file << "DTEND;TZID=" << item->DTEND.VALUE << ":" << item->DTEND.STIME.strintout() << "\n";
+            file << "DTSTART;TZID=" << item->DTSTART.VALUE << ":" << item->DTSTART.STIME.stringout(15) << "\n";
+            file << "DTEND;TZID=" << item->DTEND.VALUE << ":" << item->DTEND.STIME.stringout(15) << "\n";
             file << "SEQUENCE:" << item->SEQUENCE << "\n";
             file << "UID:" << item->UID << "\n";
             file << "TRANSP:" << item->TRANSP << "\n";
@@ -192,4 +199,25 @@ void Cal::OutputIcs(std::string FilePath) {
     }
     file << "END:VCALENDAR\n";
     file.close();
+}
+
+void Cal::InsertItem(std::pair<Caltime, Vevent *> item) {
+    this->ical.insert(item);
+}
+
+std::multimap<Caltime, Vevent *>::iterator Cal::FindLowerBound(Caltime dtime) {
+    return this->ical.lower_bound(dtime);
+}
+
+std::pair<std::multimap<Caltime, Vevent *>::iterator, std::multimap<Caltime, Vevent *>::iterator>
+Cal::FindEqualRange(Caltime dtime) {
+    return this->ical.equal_range(dtime);
+}
+
+void Cal::Erase(std::multimap<Caltime, Vevent *>::iterator item) {
+    this->ical.erase(item);
+}
+
+std::multimap<Caltime, Vevent *>::iterator Cal::FindUpperBound(Caltime dtime) {
+    return this->ical.upper_bound(dtime);
 }

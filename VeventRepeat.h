@@ -10,8 +10,7 @@
 #include "Caltime.h"
 #include "Vevent.h"
 
-class VeventRepeat : public Vevent {
-public:
+struct VeventRepeat : public Vevent {
     struct RruleNode {
         std::string FREQ;
         int COUNT;
@@ -22,7 +21,6 @@ public:
     } DTSTART, DTEND;
 
 
-public:
     VeventRepeat(char *s);
 
     VeventRepeat();
