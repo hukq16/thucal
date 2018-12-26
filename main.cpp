@@ -1027,12 +1027,17 @@ int UpdateVeventItem(int year, int month, int day, char *const *Veventlistitem) 
     auto mbegin = vevent.FindLowerBound(today);
     Caltime tomorrow(year, month, day, 23, 59, 59);
     auto mend = vevent.FindUpperBound(tomorrow);
-    auto test = mbegin;
-    test--;
-
     int j = 0;
-    if (test == mend)
-        return j;
+
+    if (mbegin != mend) {
+        auto test = mbegin;
+        test--;
+
+        if (test == mend)
+            return j;
+    }
+
+
     for (auto it = mbegin; it != mend; ++it) {
         stringstream sstream;
         if (it->second->repeat) {
