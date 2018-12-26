@@ -1051,8 +1051,8 @@ int UpdateVeventItem(int year, int month, int day, char *const *Veventlistitem) 
             auto *item = (VeventNoRepeat *) it->second;
             char summary[100];
             strcpy(summary, item->SUMMARY.c_str());
-            sprintf(Veventlistitem[j], "%02d:%02d:%02d->%02d:%02d:%02d  %s", item->DTEND.STIME.GetHour(),
-                    item->DTEND.STIME.GetMinute(), item->DTEND.STIME.GetSecond(), item->DTEND.STIME.GetHour(),
+            sprintf(Veventlistitem[j], "%02d:%02d:%02d->%02d:%02d:%02d  %s", item->DTSTART.STIME.GetHour(),
+                    item->DTSTART.STIME.GetMinute(), item->DTSTART.STIME.GetSecond(), item->DTEND.STIME.GetHour(),
                     item->DTEND.STIME.GetMinute(), item->DTEND.STIME.GetSecond(), summary);
         }
         j++;

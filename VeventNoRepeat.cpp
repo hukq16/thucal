@@ -24,7 +24,7 @@ VeventNoRepeat::VeventNoRepeat(char *s) {
                 std::string key = keypos;
                 std::string value = valuepos;
                 if (summary == "DTSTART") {
-                    if (key == "VALUE") {
+                    if (key == "TZID") {
                         this->DTSTART.VALUE = valuepos;
                         this->DTSTART.STIME.SetTime(pos);
                     }

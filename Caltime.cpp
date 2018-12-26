@@ -171,6 +171,10 @@ bool Caltime::AddDay(std::string freq) {
         if ((year % 4 == 0 && year % 100 != 0) || (year % 400 == 0)) {
             AddDay(366);
         } else {
+            if (month == 2 && monthday == 29) {
+                year++;
+                return false;
+            }
             AddDay(365);
         }
     }
