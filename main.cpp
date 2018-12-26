@@ -11,106 +11,215 @@
 
 using namespace std;
 
-
 #define MAXBUFSIZE 1024
-#define VECTORLENGTH 23
+#define VECTORLENGTH 256
 #define VECTORDEFAULTSIZE 100
-#define VEVENTLENGTH 55
+#define VEVENTLENGTH 256
 
-
+/**
+ * 将vevent显示的日程改为选中日期的日程
+ */
 static int changedayCB(EObjectType cdktype GCC_UNUSED,
                        void *object,
                        void *clientData GCC_UNUSED,
                        chtype key GCC_UNUSED);
 
+/**
+ * 增加todolist项目并刷新
+ */
 static int addtodolistCB(EObjectType cdktype GCC_UNUSED,
                          void *object,
                          void *clientData GCC_UNUSED,
                          chtype key GCC_UNUSED);
 
+/**
+ * 增加vevnet项目并刷新
+ */
 static int addVeventCB(EObjectType cdktype GCC_UNUSED,
                        void *object,
                        void *clientData GCC_UNUSED,
                        chtype key GCC_UNUSED);
 
+/**
+ * 删除选中的vevnet项目并刷新
+ */
 static int deleteVeventCB(EObjectType cdktype GCC_UNUSED,
                           void *object,
                           void *clientData GCC_UNUSED,
                           chtype key GCC_UNUSED);
 
+/**
+ * 删除选中的todolsit项目并刷新
+ */
 static int deletetodolistCB(EObjectType cdktype GCC_UNUSED,
                             void *object,
                             void *clientData GCC_UNUSED,
                             chtype key GCC_UNUSED);
 
+/**
+ * 编辑选中的todolsit项目并刷新
+ */
 static int edittodolistCB(EObjectType cdktype GCC_UNUSED,
                           void *object,
                           void *clientData GCC_UNUSED,
                           chtype key GCC_UNUSED);
 
+/**
+ * 编辑选中的vevnet项目并刷新
+ */
 static int editVeventCB(EObjectType cdktype GCC_UNUSED,
                         void *object,
                         void *clientData GCC_UNUSED,
                         chtype key GCC_UNUSED);
 
+/**
+ * 显示选中的vevnet项目的详细信息
+ */
 static int popeventdetailCB(EObjectType cdktype GCC_UNUSED,
                             void *object,
                             void *clientData GCC_UNUSED,
                             chtype key GCC_UNUSED);
 
+/**
+ * 导入ics文件
+ */
 static int ImportIcsCB(EObjectType cdktype GCC_UNUSED,
                        void *object,
                        void *clientData GCC_UNUSED,
                        chtype key GCC_UNUSED);
 
+/**
+ * 导入xls文件
+ */
 static int ImportXlsCB(EObjectType cdktype GCC_UNUSED,
                        void *object,
                        void *clientData GCC_UNUSED,
                        chtype key GCC_UNUSED);
 
+/**
+ * 导出ics文件
+ */
 static int OutputIcsCB(EObjectType cdktype GCC_UNUSED,
                        void *object,
                        void *clientData GCC_UNUSED,
                        chtype key GCC_UNUSED);
 
-
+/**
+ * 显示日历帮助
+ */
 static int CalHelpCB(EObjectType cdktype GCC_UNUSED,
                      void *object,
                      void *clientData GCC_UNUSED,
                      chtype key GCC_UNUSED);
 
+/**
+ * 显示Vevnet帮助
+ */
 static int VevnetHelpCB(EObjectType cdktype GCC_UNUSED,
                         void *object,
                         void *clientData GCC_UNUSED,
                         chtype key GCC_UNUSED);
 
+/**
+ * 显示Todolist帮助
+ */
 static int TodolisthelpCB(EObjectType cdktype GCC_UNUSED,
                           void *object,
                           void *clientData GCC_UNUSED,
                           chtype key GCC_UNUSED);
 
+/**
+ * 弹出输入框，输入字符串数据
+ * @param  title 标题
+ * @param  label 标签
+ * @return       输入的数据
+ */
 std::string popentry(const char *title, const char *label);
 
+/**
+ * 弹出输入框，输入时间数据
+ * @param  title 标题
+ * @param  label 标签
+ * @return       输入的时间
+ */
 std::string poptime(const char *title, const char *label);
 
+/**
+ * 弹出输入框，输入字符串数据
+ * @param  title 标题
+ * @param  label 标签
+ * @param  val   需要填充进输入框的数据
+ * @return       输入的数据
+ */
 std::string popentry(const char *title, const char *label, const char *val);
 
+/**
+ * 弹出输入框，输入时间数据
+ * @param  title 标题
+ * @param  label 标签
+ * @param  val   需要填充进输入框的数据
+ * @return       输入的数据
+ */
 std::string poptime(const char *title, const char *label, const char *val);
 
+/**
+ * 弹出输入框，输入日期数据
+ * @param  title 标题
+ * @param  label 标签
+ * @return       输入的数据
+ */
 std::string popdate(const char *title, const char *label);
 
-int popscale(const char *title, const char *label);
+/**
+ * 弹出输入框，选择一个1-9的数
+ * @param  title 标题
+ * @param  label 标签
+ * @param  max   最大值
+ * @return       选择的数字
+ */
+int popscale(const char *title, const char *label, int max = 9);
 
+/**
+ * 判断是否为闰年
+ * @param  year 年份
+ * @return      是否为闰年
+ */
 bool IsLeapYear(int year);
 
+/**
+ * 判断时间是否合法
+ * @param  time 时间
+ * @return      是否合法
+ */
 bool IsLegal(char *time);
 
+/**
+ * 更新vevent窗口的数据
+ * @param  year           年份
+ * @param  month          月份
+ * @param  day            日期
+ * @param  Veventlistitem 数据列表
+ * @return                数据的个数
+ */
 int UpdateVeventItem(int year, int month, int day, char *const *Veventlistitem);
 
+/**
+ * 刷新vevent列表
+ * @param Veventlistitem 数据列表
+ * @param calendar       日历小部件的指针
+ */
 void RefreshVevent(char *const *Veventlistitem, const CDKCALENDAR *calendar);
 
+/**
+ * 刷新todolist列表
+ * @param todolistitem todolist小部件的指针
+ */
 void RefreshTodolist(char *const *todolistitem);
 
+/**
+ * 删除vevnet数据
+ * @param deleteitem 删除的条目
+ */
 void DeleteVeventItem(
         const multimap<Caltime, Vevent *, std::less<Caltime>, std::allocator<std::pair<Caltime, Vevent *>>>::iterator &deleteitem);
 
@@ -123,9 +232,11 @@ CDKCALENDAR *CalWidget;
 
 
 int main(int argc, char const *argv[]) {
-
+    //导入数据库
     vevent.ImportIcs("database.ics");
     todolist.ImportTodo("todolist.txt");
+
+    //设置窗口大小
     int CalWinstartx, CalWinstarty, CalWinwidth, CalWinheight;
     int TodoWinstartx, TodoWinstarty, TodoWinwidth, TodoWinheight;
     int VeventWinstartx, VeventWinstarty, VeventWinwidth, VeventWinheight;
@@ -145,7 +256,7 @@ int main(int argc, char const *argv[]) {
     VeventWinstarty = 0;
     VeventWinstartx = 0;
 
-
+    //获取时间
     struct tm *dateInfo;
     time_t clck, retVal;
     int day;
@@ -153,12 +264,11 @@ int main(int argc, char const *argv[]) {
     int year;
     time(&clck);
     dateInfo = gmtime(&clck);
-
     day = dateInfo->tm_mday;
     month = dateInfo->tm_mon + 1;
     year = dateInfo->tm_year + 1900;
 
-
+    //新建todoilist和vevent列表
     char **todolistitem = new char *[VECTORDEFAULTSIZE];
     for (int i = 0; i < VECTORDEFAULTSIZE; ++i) {
         todolistitem[i] = new char[VECTORLENGTH];
@@ -169,31 +279,30 @@ int main(int argc, char const *argv[]) {
         Veventlistitem[i] = new char[VEVENTLENGTH];
     }
 
-    int i = 0;
-
+    //初始化屏幕
     cdkscreen = initCDKScreen(NULL);
     initCDKColor();
-
-
+    //提取todolist条目
+    int i = 0;
     for (auto &it:todolist.v) {
         std::stringstream sstream;
         sstream << it.first << " " << it.second << std::endl;
         sstream.getline(todolistitem[i], VECTORLENGTH);
         i++;
     }
-
+    //没有条目的补救
     if (i == 0) {
         sprintf(todolistitem[0], " ");
         i = 1;
     }
-
+    //提取vevent条目
     int j = UpdateVeventItem(day, month, year, Veventlistitem);
-
+    //没有条目的补救
     if (j == 0) {
         sprintf(Veventlistitem[0], " ");
         j = 1;
     }
-
+    //新建日历小部件
     CalWidget = newCDKCalendar(cdkscreen, RIGHT, CalWinstarty,
                                "<C>Calendar", day, month, year,
                                COLOR_PAIR (16) | A_BOLD,
@@ -202,6 +311,7 @@ int main(int argc, char const *argv[]) {
                                COLOR_PAIR (40) | A_REVERSE,
                                TRUE,
                                FALSE);
+    //新建vevent小部件
     Veventwidget = newCDKScroll(cdkscreen,
                                 LEFT,
                                 VeventWinstarty,
@@ -214,7 +324,7 @@ int main(int argc, char const *argv[]) {
                                 A_REVERSE,
                                 TRUE,
                                 FALSE);
-
+    //新建todolist小部件
     Todolistwidget = newCDKScroll(cdkscreen,
                                   RIGHT,
                                   TodoWinstarty,
@@ -227,7 +337,7 @@ int main(int argc, char const *argv[]) {
                                   A_REVERSE,
                                   TRUE,
                                   FALSE);
-
+    //绑定按键
     bindCDKObject(vSCROLL, Todolistwidget, 'a', addtodolistCB, todolistitem);
     bindCDKObject(vSCROLL, Veventwidget, 'a', addVeventCB, Veventlistitem);
 
@@ -256,30 +366,31 @@ int main(int argc, char const *argv[]) {
     bindCDKObject(vSCROLL, Todolistwidget, 'o', OutputIcsCB, 0);
     bindCDKObject(vSCROLL, Veventwidget, 'o', OutputIcsCB, 0);
 
+    //开始的提示信息
     const char *mesg[3];
-
     mesg[0] = "Press h for help";
     mesg[1] = "";
     mesg[2] = "<C>Press any key to continue.";
-
     popupLabel(cdkscreen, (CDK_CSTRING2) mesg, 3);
     refreshCDKScreen(cdkscreen);
 
+    //刷新屏幕，把控制权交给用户
     RefreshVevent(Veventlistitem, CalWidget);
     traverseCDKScreen(cdkscreen);
 
-
+    //结束信息
     mesg[0] = "Done";
     mesg[1] = "";
     mesg[2] = "<C>Press any key to continue.";
     popupLabel(cdkscreen, (CDK_CSTRING2) mesg, 3);
 
-
+    //结束处理
     destroyCDKScroll(Veventwidget);
     destroyCDKScroll(Todolistwidget);
     destroyCDKCalendar(CalWidget);
     destroyCDKScreen(cdkscreen);
     endCDK();
+    //导出数据库
     todolist.OutputTodo("todolist.txt");
     vevent.OutputIcs("database.ics");
     return 0;
@@ -349,7 +460,7 @@ static int addVeventCB(EObjectType cdktype GCC_UNUSED,
     const char *message[2];
     message[0] = "<C></U>Is the event repeat?";
     const char *buttons[] =
-            {"</B/24>No", "</B/24>Yes"};
+            {"No", "Yes"};
     int choice = popupDialog(cdkscreen, (CDK_CSTRING2) message, 1, (CDK_CSTRING2) buttons, 2);
 
     if (choice == 1) {
@@ -358,13 +469,13 @@ static int addVeventCB(EObjectType cdktype GCC_UNUSED,
         const char *repeatmessage[2];
         repeatmessage[0] = "<C></U>choose repeat kind";
         const char *repeatbuttons[] =
-                {"</B/24>DAILY", "</B/24>WEEKLY", "</B/24>MONTHLY", "</B/24>YEARLY"};
+                {"DAILY", "WEEKLY", "MONTHLY", "YEARLY"};
         int repeatchoice = popupDialog(cdkscreen, (CDK_CSTRING2) repeatmessage, 1, (CDK_CSTRING2) repeatbuttons, 4);
 
 
         const char *reptitle = "<C>Select repeat count";
         const char *replabel = "</5>repeat count";
-        int repeatcount = popscale(reptitle, replabel);
+        int repeatcount = popscale(reptitle, replabel, 999);
 
         VeventRepeat *f_vec = new VeventRepeat;
         f_vec->SUMMARY = summary;
@@ -436,7 +547,7 @@ static int deleteVeventCB(EObjectType cdktype GCC_UNUSED,
     const char *message[2];
     message[0] = "<C></U>really to delete?";
     const char *buttons[] =
-            {"</B/24>No", "</B/24>Yes"};
+            {"No", "Yes"};
     int choice = popupDialog(cdkscreen, (CDK_CSTRING2) message, 1, (CDK_CSTRING2) buttons, 2);
     if (choice == 1) {
         DeleteVeventItem(deleteitem);
@@ -464,7 +575,7 @@ static int deletetodolistCB(EObjectType cdktype GCC_UNUSED,
     const char *message[2];
     message[0] = "<C></U>really to delete?";
     const char *buttons[] =
-            {"</B/24>No", "</B/24>Yes"};
+            {"No", "Yes"};
     int choice = popupDialog(cdkscreen, (CDK_CSTRING2) message, 1, (CDK_CSTRING2) buttons, 2);
     if (choice == 1) {
         todolist.v.erase(deleteitem);
@@ -575,7 +686,7 @@ static int editVeventCB(EObjectType cdktype GCC_UNUSED,
         const char *repeatmessage[2];
         repeatmessage[0] = "<C></U>choose repeat kind";
         const char *repeatbuttons[] =
-                {"</B/24>DAILY", "</B/24>WEEKLY", "</B/24>MONTHLY", "</B/24>YEARLY"};
+                {"DAILY", "WEEKLY", "MONTHLY", "YEARLY"};
         int repeatchoice = popupDialog(cdkscreen, (CDK_CSTRING2) repeatmessage, 1, (CDK_CSTRING2) repeatbuttons, 4);
 
         CDKSCALE *repeatscale = 0;
@@ -1121,10 +1232,10 @@ std::string popdate(const char *title, const char *label) {
     return time;
 }
 
-int popscale(const char *title, const char *label) {
+int popscale(const char *title, const char *label, int max) {
     CDKSCALE *importance = 0;
     int iimport;
-    importance = newCDKScale(cdkscreen, CENTER, CENTER, title, label, A_NORMAL, 5, 1, 1, 9, 1, 2, TRUE, FALSE);
+    importance = newCDKScale(cdkscreen, CENTER, CENTER, title, label, A_NORMAL, 5, 1, 1, max, 1, 2, TRUE, FALSE);
     iimport = activateCDKScale(importance, 0);
     destroyCDKScale(importance);
     eraseCDKScreen(cdkscreen);

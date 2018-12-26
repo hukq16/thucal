@@ -10,19 +10,30 @@
 #include "Caltime.h"
 #include "Vevent.h"
 
+struct RruleNode {
+    std::string FREQ;
+    int COUNT;
+};
+
+struct time {
+    std::string TZID;
+    Caltime STIME;
+};
+
 struct VeventRepeat : public Vevent {
-    struct RruleNode {
-        std::string FREQ;
-        int COUNT;
-    } RRULE;
-    struct time {
-        std::string TZID;
-        Caltime STIME;
-    } DTSTART, DTEND;
+    RruleNode RRULE;
 
+    struct time DTSTART, DTEND;
 
+    /**
+     * 通过字符串初始化
+     * @param s 字符串
+     */
     VeventRepeat(char *s);
 
+    /**
+     * 默认初始化函数
+     */
     VeventRepeat();
 };
 

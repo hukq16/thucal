@@ -7,14 +7,23 @@
 
 #include "Vevent.h"
 
-struct VeventNoRepeat : public Vevent {
-    struct time {
-        std::string VALUE;
-        Caltime STIME;
-    } DTSTART, DTEND;
+struct dtime {
+    std::string VALUE;
+    Caltime STIME;
+};
 
+struct VeventNoRepeat : public Vevent {
+    struct dtime DTSTART, DTEND;
+
+    /**
+     * 通过字符串初始化
+     * @param s 字符串
+     */
     VeventNoRepeat(char *s);
 
+    /**
+     * 默认初始化函数
+     */
     VeventNoRepeat();
 };
 
