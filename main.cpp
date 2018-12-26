@@ -968,7 +968,7 @@ static int VevnetHelpCB(EObjectType cdktype GCC_UNUSED,
                         void *clientData GCC_UNUSED,
                         chtype key GCC_UNUSED) {
     char **msg = new char *[18];
-    for (int i = 0; i < 17; ++i) {
+    for (int i = 0; i < 18; ++i) {
         msg[i] = new char[256];
     }
     sprintf(msg[0], "Left Arrow       Shift the list left one column.");
@@ -997,8 +997,8 @@ static int TodolisthelpCB(EObjectType cdktype GCC_UNUSED,
                           void *object,
                           void *clientData GCC_UNUSED,
                           chtype key GCC_UNUSED) {
-    char **msg = new char *[7];
-    for (int i = 0; i < 16; ++i) {
+    char **msg = new char *[17];
+    for (int i = 0; i < 17; ++i) {
         msg[i] = new char[256];
     }
     sprintf(msg[0], "Left Arrow       Shift the list left one column.");
