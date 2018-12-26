@@ -95,6 +95,14 @@ void Caltime::SetTime(char *time) {
         int _minute = (time[11] - '0') * 10 + (time[12] - '0');
         int _second = (time[13] - '0') * 10 + (time[14] - '0');
         SetTime(_year, _month, _monthday, _hour, _minute, _second);
+    } else if (len == 14) {
+        int _year = (time[0] - '0') * 1000 + (time[1] - '0') * 100 + (time[2] - '0') * 10 + (time[3] - '0');
+        int _month = (time[4] - '0') * 10 + (time[5] - '0');
+        int _monthday = (time[6] - '0') * 10 + (time[7] - '0');
+        int _hour = (time[8] - '0') * 10 + (time[9] - '0');
+        int _minute = (time[10] - '0') * 10 + (time[11] - '0');
+        int _second = (time[12] - '0') * 10 + (time[13] - '0');
+        SetTime(_year, _month, _monthday, _hour, _minute, _second);
     } else if (len == 8) {
         int _year = (time[0] - '0') * 1000 + (time[1] - '0') * 100 + (time[2] - '0') * 10 + (time[3] - '0');
         int _month = (time[4] - '0') * 10 + (time[5] - '0');
@@ -248,6 +256,35 @@ bool Caltime::PrvDay(int count) {
     }
     yearday += monthday;
     return state;
+}
+
+bool Caltime::operator==(const Caltime &d) const {
+    return year == d.year && month == d.month && monthday == d.monthday && d.hour == hour && d.minute == minute &&
+           d.second == second;
+}
+
+std::string Caltime::strintout() {
+    char out[20];
+    sprintf(out, "%04d%02d%02dT%02d%02d%02d", year, month, monthday, hour, minute, second);
+    out[15] = '\0';
+    std::string ss = out;
+    return ss;
+}
+
+std::string Caltime::strintout2() {
+    char out[20];
+    sprintf(out, "%04d%02d%02d%02d%02d%02d", year, month, monthday, hour, minute, second);
+    out[14] = '\0';
+    std::string ss = out;
+    return ss;
+}
+
+std::string Caltime::strintout3() {
+    char out[20];
+    sprintf(out, "%04d/%02d/%02d-%02d:%02d:%02d", year, month, monthday, hour, minute, second);
+    out[19] = '\0';
+    std::string ss = out;
+    return ss;
 }
 
 

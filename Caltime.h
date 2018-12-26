@@ -16,6 +16,7 @@ public:
 
     bool operator<(const Caltime &d) const;
 
+    bool operator==(const Caltime &d) const;
     void SetTime(int _year, int _month, int _monthday, int _hour, int _minute, int _second);
 
     void SetTime(char *time);
@@ -31,7 +32,11 @@ public:
 
     char **GetDateItem(Caltime d);
 
-    char **GetDateItem(tm d);
+    std::string strintout();
+
+    std::string strintout2();
+
+    std::string strintout3();
     int second;
     int minute;
     int hour;
