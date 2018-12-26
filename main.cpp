@@ -1,26 +1,23 @@
 #include <iostream>
 #include <curses.h>
 #include <unistd.h>
-#include <menu.h>
 #include <cdk.h>
 #include <ctime>
 #include <string>
 #include "Todolist.h"
 #include "Cal.h"
-#include <locale.h>
 #include "VeventRepeat.h"
 #include "VeventNoRepeat.h"
 
-#define MAXBUFSIZE 1024
-static CDKOBJS *all_objects[3];
 using namespace std;
-#define NumElements(a) ((sizeof a)/(sizeof a[0]))
+
+
+#define MAXBUFSIZE 1024
 #define VECTORLENGTH 23
 #define VECTORDEFAULTSIZE 100
 #define VEVENTLENGTH 55
-Cal vevent;
-//char todolistitem[VECTORDEFAULTSIZE][VECTORLENGTH];
-//char Veventlistitem[VECTORDEFAULTSIZE][VEVENTLENGTH];
+
+
 static int changedayCB(EObjectType cdktype GCC_UNUSED,
                        void *object,
                        void *clientData GCC_UNUSED,
@@ -76,6 +73,7 @@ static int OutputIcsCB(EObjectType cdktype GCC_UNUSED,
                        void *clientData GCC_UNUSED,
                        chtype key GCC_UNUSED);
 
+
 static int CalHelpCB(EObjectType cdktype GCC_UNUSED,
                      void *object,
                      void *clientData GCC_UNUSED,
@@ -100,31 +98,34 @@ std::string popentry(const char *title, const char *label, const char *val);
 std::string poptime(const char *title, const char *label, const char *val);
 
 std::string popdate(const char *title, const char *label);
+
+int popscale(const char *title, const char *label);
+
+int UpdateVeventItem(int day, int month, int year, char *const *Veventlistitem);
+
+void RefreshVevent(char *const *Veventlistitem, const CDKCALENDAR *calendar);
+
+void RefreshTodolist(char *const *todolistitem);
+
+void DeleteVeventItem(
+        const multimap<Caltime, Vevent *, std::less<Caltime>, std::allocator<std::pair<Caltime, Vevent *>>>::iterator &deleteitem);
+
+Cal vevent;
+Todolist todolist;
 CDKSCREEN *cdkscreen = NULL;
 CDKSCROLL *Todolistwidget;
 CDKSCROLL *Veventwidget;
 CDKCALENDAR *CalWidget;
-Todolist todolist;
+
+
 int main(int argc, char const *argv[]) {
 
     vevent.ImportIcs("database.ics");
-    VeventNoRepeat *f_vec = new VeventNoRepeat;
-    f_vec->SUMMARY = "test";
-    f_vec->LOCATION = "skyworks";
-    f_vec->STATUS = "CONFIRMED";
-    f_vec->DESCRIPTION = "test app";
-    f_vec->TRANSP = "OPAQUE";
-    f_vec->UID = "1.36142813447@thucal";
-    f_vec->DTEND.VALUE = "Asia/Shanghai";
-    f_vec->DTEND.STIME.SetTime(2018, 12, 25, 16, 20, 0);
-    f_vec->DTSTART.VALUE = "Asia/Shanghai";
-    f_vec->DTSTART.STIME.SetTime(2018, 12, 25, 17, 20, 0);
-    f_vec->repeat = false;
-    vevent.ical.insert(pair<Caltime, Vevent *>(f_vec->DTSTART.STIME, f_vec));
+
     int CalWinstartx, CalWinstarty, CalWinwidth, CalWinheight;
     int TodoWinstartx, TodoWinstarty, TodoWinwidth, TodoWinheight;
     int VeventWinstartx, VeventWinstarty, VeventWinwidth, VeventWinheight;
-    int HelpWinstartx, HelpWinstarty, HelpWinwidth, HelpWinheight;
+
     CalWinheight = 12;
     CalWinwidth = 24;
     CalWinstarty = 0;
@@ -140,7 +141,6 @@ int main(int argc, char const *argv[]) {
     VeventWinstarty = 0;
     VeventWinstartx = 0;
 
-    setlocale(LC_ALL, "");
 
     struct tm *dateInfo;
     time_t clck, retVal;
@@ -165,61 +165,39 @@ int main(int argc, char const *argv[]) {
         Veventlistitem[i] = new char[VEVENTLENGTH];
     }
 
-    todolist.InsertTodo(2, "jsdaffk");
-    todolist.InsertTodo(5, "dfasdfsadfsad");
-    todolist.InsertTodo(7, "s");
     int i = 0;
 
     cdkscreen = initCDKScreen(NULL);
     initCDKColor();
+
+
     for (auto &it:todolist.v) {
         std::stringstream sstream;
         sstream << it.first << " " << it.second << std::endl;
         sstream.getline(todolistitem[i], VECTORLENGTH);
         i++;
     }
+
+
     const char *mesg[3];
-    const char *mesg2[3];
-    mesg2[0] = "Press h for help";
-    mesg2[1] = "";
-    mesg2[2] = "<C>Press any key to continue.";
-    popupLabel(cdkscreen, (CDK_CSTRING2) mesg2, 3);
 
-    Caltime today(year, month, day, 0, 0, 0);
+    mesg[0] = "Press h for help";
+    mesg[1] = "";
+    mesg[2] = "<C>Press any key to continue.";
+    popupLabel(cdkscreen, (CDK_CSTRING2) mesg, 3);
 
-    auto mbegin = vevent.ical.lower_bound(today);
-    Caltime tomorrow(year, month, day, 23, 59, 59);
-    auto mend = vevent.ical.upper_bound(tomorrow);
-    int j = 0;
-    for (auto it = mbegin; it != mend; ++it) {
-        std::stringstream sstream;
-        if (it->second->repeat) {
-            auto *item = (VeventRepeat *) it->second;
-            char summary[100];
-            strcpy(summary, item->SUMMARY.c_str());
-            sprintf(Veventlistitem[j], "%02d:%02d:%02d->%02d:%02d:%02d  %s", item->DTSTART.STIME.hour,
-                    item->DTSTART.STIME.minute, item->DTSTART.STIME.second, item->DTEND.STIME.hour,
-                    item->DTEND.STIME.minute, item->DTEND.STIME.second, summary);
-        } else {
-            auto *item = (VeventNoRepeat *) it->second;
-            char summary[100];
-            strcpy(summary, item->SUMMARY.c_str());
-            sprintf(Veventlistitem[j], "%02d:%02d:%02d->%02d:%02d:%02d  %s", item->DTSTART.STIME.hour,
-                    item->DTSTART.STIME.minute, item->DTSTART.STIME.second, item->DTEND.STIME.hour,
-                    item->DTEND.STIME.minute, item->DTEND.STIME.second, summary);
-        }
-        j++;
-    }
+
+    int j = UpdateVeventItem(day, month, year, Veventlistitem);
+
 
     CalWidget = newCDKCalendar(cdkscreen, RIGHT, CalWinstarty,
                                "<C>Calendar", day, month, year,
-                                            COLOR_PAIR (16) | A_BOLD,
-                                            COLOR_PAIR (24) | A_BOLD,
-                                            COLOR_PAIR (32) | A_BOLD,
-                                            COLOR_PAIR (40) | A_REVERSE,
+                               COLOR_PAIR (16) | A_BOLD,
+                               COLOR_PAIR (24) | A_BOLD,
+                               COLOR_PAIR (32) | A_BOLD,
+                               COLOR_PAIR (40) | A_REVERSE,
                                TRUE,
                                FALSE);
-    all_objects[0] = ObjPtr(CalWidget);
     Veventwidget = newCDKScroll(cdkscreen,
                                 LEFT,
                                 VeventWinstarty,
@@ -232,7 +210,6 @@ int main(int argc, char const *argv[]) {
                                 A_REVERSE,
                                 TRUE,
                                 FALSE);
-    all_objects[1] = ObjPtr(Veventwidget);
 
     Todolistwidget = newCDKScroll(cdkscreen,
                                   RIGHT,
@@ -246,14 +223,17 @@ int main(int argc, char const *argv[]) {
                                   A_REVERSE,
                                   TRUE,
                                   FALSE);
-    all_objects[2] = ObjPtr(Todolistwidget);
-    bindCDKObject(vCALENDAR, CalWidget, KEY_ENTER, changedayCB, Veventlistitem);
+
     bindCDKObject(vSCROLL, Todolistwidget, 'a', addtodolistCB, todolistitem);
     bindCDKObject(vSCROLL, Veventwidget, 'a', addVeventCB, Veventlistitem);
+
     bindCDKObject(vSCROLL, Veventwidget, 'd', deleteVeventCB, Veventlistitem);
     bindCDKObject(vSCROLL, Todolistwidget, 'd', deletetodolistCB, todolistitem);
+
     bindCDKObject(vSCROLL, Todolistwidget, 'e', edittodolistCB, todolistitem);
     bindCDKObject(vSCROLL, Veventwidget, 'e', editVeventCB, Veventlistitem);
+
+    bindCDKObject(vCALENDAR, CalWidget, KEY_ENTER, changedayCB, Veventlistitem);
     bindCDKObject(vSCROLL, Veventwidget, KEY_ENTER, popeventdetailCB, Veventlistitem);
 
     bindCDKObject(vCALENDAR, CalWidget, 'h', CalHelpCB, 0);
@@ -272,19 +252,25 @@ int main(int argc, char const *argv[]) {
     bindCDKObject(vSCROLL, Todolistwidget, 'o', OutputIcsCB, 0);
     bindCDKObject(vSCROLL, Veventwidget, 'o', OutputIcsCB, 0);
 
+
     refreshCDKScreen(cdkscreen);
     traverseCDKScreen(cdkscreen);
+
+
     mesg[0] = "Done";
     mesg[1] = "";
     mesg[2] = "<C>Press any key to continue.";
     popupLabel(cdkscreen, (CDK_CSTRING2) mesg, 3);
-    _destroyCDKObject(all_objects[2]);
+
+
+    destroyCDKScroll(Veventwidget);
+    destroyCDKScroll(Todolistwidget);
+    destroyCDKCalendar(CalWidget);
     destroyCDKScreen(cdkscreen);
     endCDK();
     vevent.OutputIcs("database.ics");
     return 0;
 }
-
 
 static int changedayCB(EObjectType cdktype GCC_UNUSED,
                        void *object,
@@ -294,38 +280,7 @@ static int changedayCB(EObjectType cdktype GCC_UNUSED,
     char **Veventlistitem = (char **) (clientData);
     CDKCALENDAR *calendar = (CDKCALENDAR *) object;
     const char *mesg[5];
-
-    Caltime today(calendar->year, calendar->month, calendar->day, 0, 0, 0);
-
-    auto mbegin = vevent.ical.lower_bound(today);
-    Caltime tomorrow(calendar->year, calendar->month, calendar->day, 23, 59, 59);
-    auto mend = vevent.ical.upper_bound(tomorrow);
-    int j = 0;
-    for (auto it = mbegin; it != mend; ++it) {
-        std::stringstream sstream;
-        if (it->second->repeat) {
-            auto *item = (VeventRepeat *) it->second;
-            char summary[100];
-            strcpy(summary, item->SUMMARY.c_str());
-            summary[strlen(item->SUMMARY.c_str())] = '\0';
-            sprintf(Veventlistitem[j], "%02d:%02d:%02d->%02d:%02d:%02d  %s", item->DTSTART.STIME.hour,
-                    item->DTSTART.STIME.minute, item->DTSTART.STIME.second, item->DTEND.STIME.hour,
-                    item->DTEND.STIME.minute, item->DTEND.STIME.second, summary);
-
-        } else {
-            auto *item = (VeventNoRepeat *) it->second;
-            char summary[100];
-            strcpy(summary, item->SUMMARY.c_str());
-            summary[strlen(item->SUMMARY.c_str())] = '\0';
-            sprintf(Veventlistitem[j], "%02d:%02d:%02d->%02d:%02d:%02d  %s", item->DTSTART.STIME.hour,
-                    item->DTSTART.STIME.minute, item->DTSTART.STIME.second, item->DTEND.STIME.hour,
-                    item->DTEND.STIME.minute, item->DTEND.STIME.second, summary);
-        }
-        j++;
-    }
-    eraseCDKScroll(Veventwidget);
-    setCDKScroll(Veventwidget, (CDK_CSTRING2) Veventlistitem, j, FALSE, A_REVERSE, TRUE);
-    drawCDKScroll(Veventwidget, TRUE);
+    RefreshVevent(Veventlistitem, calendar);
     return (FALSE);
 }
 
@@ -334,47 +289,20 @@ static int addtodolistCB(EObjectType cdktype GCC_UNUSED,
                          void *object,
                          void *clientData GCC_UNUSED,
                          chtype key GCC_UNUSED) {
-
+    CDKSCROLL *todolistwidget = (CDKSCROLL *) object;
     char **todolistitem = (char **) clientData;
     const char *sumtitle = "Enter todo things.";
     const char *sumlabel = "</U/5>summary:<!U!5>";
-    char *summary;
-    char temp[256];
-    CDKSCROLL *todolistwidget = (CDKSCROLL *) object;
-    CDKENTRY *directory = 0;
+    std::string summary = popentry(sumtitle, sumlabel);
 
-    directory = newCDKEntry(cdkscreen, CENTER, CENTER, sumtitle, sumlabel, A_NORMAL, '_', vMIXED, 40, 0, 256, TRUE,
-                            FALSE);
-    summary = activateCDKEntry(directory, 0);
-    std::string summ = summary;
-    destroyCDKEntry(directory);
-    eraseCDKScreen(cdkscreen);
-    refreshCDKScreen(cdkscreen);
-
-
-    CDKSCALE *importance = 0;
     const char *imptitle = "<C>Select a value";
     const char *implabel = "</5>Current value";
-    int iimport;
-    importance = newCDKScale(cdkscreen, CENTER, CENTER, imptitle, implabel, A_NORMAL, 5, 1, 1, 9, 1, 2, TRUE, FALSE);
-    iimport = activateCDKScale(importance, 0);
-    destroyCDKScale(importance);
-    eraseCDKScreen(cdkscreen);
-    refreshCDKScreen(cdkscreen);
-    todolist.InsertTodo(iimport, summ);
-    int i = 0;
-    for (auto &it:todolist.v) {
-        std::stringstream sstream;
-        sstream << it.first << " " << it.second << std::endl;
-        sstream.getline(todolistitem[i], VECTORLENGTH);
-        i++;
-    }
-    eraseCDKScroll(Todolistwidget);
-    setCDKScroll(Todolistwidget, (CDK_CSTRING2) todolistitem, i, FALSE, A_REVERSE, TRUE);
-    drawCDKScroll(Todolistwidget, TRUE);
+    int iimport = popscale(imptitle, implabel);
+    todolist.InsertTodo(iimport, summary);
+
+    RefreshTodolist(todolistitem);
     return (FALSE);
 }
-
 
 static int addVeventCB(EObjectType cdktype GCC_UNUSED,
                        void *object,
@@ -420,16 +348,10 @@ static int addVeventCB(EObjectType cdktype GCC_UNUSED,
                 {"</B/24>DAILY", "</B/24>WEEKLY", "</B/24>MONTHLY", "</B/24>YEARLY"};
         int repeatchoice = popupDialog(cdkscreen, (CDK_CSTRING2) repeatmessage, 1, (CDK_CSTRING2) repeatbuttons, 4);
 
-        CDKSCALE *repeatscale = 0;
+
         const char *reptitle = "<C>Select repeat count";
         const char *replabel = "</5>repeat count";
-        int repeatcount;
-        repeatscale = newCDKScale(cdkscreen, CENTER, CENTER, reptitle, replabel, A_NORMAL, 5, 1, 1, 999, 1, 5, TRUE,
-                                  FALSE);
-        repeatcount = activateCDKScale(repeatscale, 0);
-        destroyCDKScale(repeatscale);
-        eraseCDKScreen(cdkscreen);
-        refreshCDKScreen(cdkscreen);
+        int repeatcount = popscale(reptitle, replabel);
 
         VeventRepeat *f_vec = new VeventRepeat;
         f_vec->SUMMARY = summary;
@@ -480,69 +402,8 @@ static int addVeventCB(EObjectType cdktype GCC_UNUSED,
         vevent.ical.insert(std::pair<Caltime, Vevent *>(f_vec->DTSTART.STIME, f_vec));
     }
 
-    Caltime today(CalWidget->year, CalWidget->month, CalWidget->day, 0, 0, 0);
-
-    auto mbegin = vevent.ical.lower_bound(today);
-    Caltime tomorrow(CalWidget->year, CalWidget->month, CalWidget->day, 23, 59, 59);
-    auto mend = vevent.ical.upper_bound(tomorrow);
-    int j = 0;
-    for (auto it = mbegin; it != mend; ++it) {
-        std::stringstream sstream;
-        if (it->second->repeat) {
-            auto *item = (VeventRepeat *) it->second;
-            char summary[100];
-            strcpy(summary, item->SUMMARY.c_str());
-            sprintf(Veventlistitem[j], "%02d:%02d:%02d->%02d:%02d:%02d  %s", item->DTSTART.STIME.hour,
-                    item->DTSTART.STIME.minute, item->DTSTART.STIME.second, item->DTEND.STIME.hour,
-                    item->DTEND.STIME.minute, item->DTEND.STIME.second, summary);
-        } else {
-            auto *item = (VeventNoRepeat *) it->second;
-            char summary[100];
-            strcpy(summary, item->SUMMARY.c_str());
-            sprintf(Veventlistitem[j], "%02d:%02d:%02d->%02d:%02d:%02d  %s", item->DTSTART.STIME.hour,
-                    item->DTSTART.STIME.minute, item->DTSTART.STIME.second, item->DTEND.STIME.hour,
-                    item->DTEND.STIME.minute, item->DTEND.STIME.second, summary);
-        }
-        j++;
-    }
-    eraseCDKScroll(Veventwidget);
-    setCDKScroll(Veventwidget, (CDK_CSTRING2) Veventlistitem, j, FALSE, A_REVERSE, TRUE);
-    drawCDKScroll(Veventwidget, TRUE);
+    RefreshVevent(Veventlistitem, CalWidget);
     return (FALSE);
-}
-
-
-std::string popentry(const char *title, const char *label) {
-    char *charvalue;
-    char temp[256];
-
-    CDKENTRY *entry = 0;
-
-    entry = newCDKEntry(cdkscreen, CENTER, CENTER, title, label, A_NORMAL, '_', vMIXED, 40, 0, 256, TRUE, FALSE);
-    charvalue = activateCDKEntry(entry, 0);
-    std::string svalue = charvalue;
-    destroyCDKEntry(entry);
-    eraseCDKScreen(cdkscreen);
-    refreshCDKScreen(cdkscreen);
-    return svalue;
-}
-
-std::string poptime(const char *title, const char *label) {
-    char *charvalue;
-    char temp[256];
-    char *info;
-    char *mixed;
-    const char *Overlay = "____/__/__-__:__:__";
-    const char *plate = "####/##/##-##:##:##";
-    CDKTEMPLATE *cdktemplate = 0;
-
-    cdktemplate = newCDKTemplate(cdkscreen, CENTER, CENTER, title, label, plate, Overlay, TRUE, FALSE);
-    info = activateCDKTemplate(cdktemplate, 0);
-    std::string time = info;
-    destroyCDKEntry(cdktemplate);
-    eraseCDKScreen(cdkscreen);
-    refreshCDKScreen(cdkscreen);
-    return time;
 }
 
 
@@ -553,8 +414,8 @@ static int deleteVeventCB(EObjectType cdktype GCC_UNUSED,
 
     CDKSCROLL *veventwidget = (CDKSCROLL *) object;
     char **Veventlistitem = (char **) clientData;
-    Caltime today(CalWidget->year, CalWidget->month, CalWidget->day, 0, 0, 0);
 
+    Caltime today(CalWidget->year, CalWidget->month, CalWidget->day, 0, 0, 0);
     auto deleteitem = vevent.ical.lower_bound(today);
     for (int i = 0; i < veventwidget->currentItem; ++i) {
         deleteitem++;
@@ -565,64 +426,10 @@ static int deleteVeventCB(EObjectType cdktype GCC_UNUSED,
             {"</B/24>No", "</B/24>Yes"};
     int choice = popupDialog(cdkscreen, (CDK_CSTRING2) message, 1, (CDK_CSTRING2) buttons, 2);
     if (choice == 1) {
-        if (deleteitem->second->repeat) {
-            VeventRepeat *deleterepeat = (VeventRepeat *) deleteitem->second;
-            Caltime deletetime = deleterepeat->DTSTART.STIME;
-            for (int i = 0; i < deleterepeat->RRULE.COUNT; ++i) {
-                auto pair2 = vevent.ical.equal_range(deletetime);
-                for (auto j = pair2.first; j != pair2.second; j++) {
-                    if (j->second == deleterepeat) {
-                        vevent.ical.erase(j);
-                        break;
-                    }
-                }
-                deletetime.AddDay(deleterepeat->RRULE.FREQ);
-            }
-            delete deleterepeat;
-        } else {
-            VeventNoRepeat *deletenorepeat = (VeventNoRepeat *) deleteitem->second;
-            Caltime deletetime = deletenorepeat->DTSTART.STIME;
-            auto pair2 = vevent.ical.equal_range(deletetime);
-            for (auto j = pair2.first; j != pair2.second; j++) {
-                if (j->second == deletenorepeat) {
-                    vevent.ical.erase(j);
-                    break;
-                }
-            }
-            delete deletenorepeat;
-        }
-
+        DeleteVeventItem(deleteitem);
     }
 
-
-    auto mbegin = vevent.ical.lower_bound(today);
-    Caltime tomorrow(CalWidget->year, CalWidget->month, CalWidget->day, 23, 59, 59);
-    auto mend = vevent.ical.upper_bound(tomorrow);
-    int j = 0;
-    for (auto it = mbegin; it != mend; ++it) {
-        std::stringstream sstream;
-        if (it->second->repeat) {
-            auto *item = (VeventRepeat *) it->second;
-            char summary[100];
-            strcpy(summary, item->SUMMARY.c_str());
-            sprintf(Veventlistitem[j], "%02d:%02d:%02d->%02d:%02d:%02d  %s", item->DTSTART.STIME.hour,
-                    item->DTSTART.STIME.minute, item->DTSTART.STIME.second, item->DTEND.STIME.hour,
-                    item->DTEND.STIME.minute, item->DTEND.STIME.second, summary);
-        } else {
-            auto *item = (VeventNoRepeat *) it->second;
-            char summary[100];
-            strcpy(summary, item->SUMMARY.c_str());
-            sprintf(Veventlistitem[j], "%02d:%02d:%02d->%02d:%02d:%02d  %s", item->DTSTART.STIME.hour,
-                    item->DTSTART.STIME.minute, item->DTSTART.STIME.second, item->DTEND.STIME.hour,
-                    item->DTEND.STIME.minute, item->DTEND.STIME.second, summary);
-        }
-        j++;
-    }
-
-
-    setCDKScroll(Veventwidget, (CDK_CSTRING2) Veventlistitem, j, FALSE, A_REVERSE, TRUE);
-    eraseCDKScroll(Veventwidget);
-    drawCDKScroll(Veventwidget, TRUE);
+    RefreshVevent(Veventlistitem, CalWidget);
     return (FALSE);
 
 }
@@ -648,21 +455,11 @@ static int deletetodolistCB(EObjectType cdktype GCC_UNUSED,
         todolist.v.erase(deleteitem);
     }
 
-    int i = 0;
-    for (auto &it:todolist.v) {
-        std::stringstream sstream;
-        sstream << it.first << " " << it.second << std::endl;
-        sstream.getline(todolistitem[i], VECTORLENGTH);
-        i++;
-    }
-    eraseCDKScroll(Todolistwidget);
-    setCDKScroll(Todolistwidget, (CDK_CSTRING2) todolistitem, i, FALSE, A_REVERSE, TRUE);
-    drawCDKScroll(Todolistwidget, TRUE);
+    RefreshTodolist(todolistitem);
     return (FALSE);
 
 
 }
-
 
 static int edittodolistCB(EObjectType cdktype GCC_UNUSED,
                           void *object,
@@ -701,36 +498,9 @@ static int edittodolistCB(EObjectType cdktype GCC_UNUSED,
     refreshCDKScreen(cdkscreen);
     todolist.InsertTodo(iimport, summary);
 
-    int i = 0;
-    for (auto &it:todolist.v) {
-        std::stringstream sstream;
-        sstream << it.first << " " << it.second << std::endl;
-        sstream.getline(todolistitem[i], VECTORLENGTH);
-        i++;
-    }
-    eraseCDKScroll(Todolistwidget);
-    setCDKScroll(Todolistwidget, (CDK_CSTRING2) todolistitem, i, FALSE, A_REVERSE, TRUE);
-    drawCDKScroll(Todolistwidget, TRUE);
+    RefreshTodolist(todolistitem);
     return (FALSE);
 }
-
-
-std::string popentry(const char *title, const char *label, const char *val) {
-    char *charvalue;
-    char temp[256];
-
-    CDKENTRY *entry = 0;
-
-    entry = newCDKEntry(cdkscreen, CENTER, CENTER, title, label, A_NORMAL, '_', vMIXED, 40, 0, 256, TRUE, FALSE);
-    setCDKEntry(entry, val, 0, 256, TRUE);
-    charvalue = activateCDKEntry(entry, 0);
-    std::string svalue = charvalue;
-    destroyCDKEntry(entry);
-    eraseCDKScreen(cdkscreen);
-    refreshCDKScreen(cdkscreen);
-    return svalue;
-}
-
 
 static int editVeventCB(EObjectType cdktype GCC_UNUSED,
                         void *object,
@@ -920,58 +690,13 @@ static int editVeventCB(EObjectType cdktype GCC_UNUSED,
 
     }
 
+    RefreshVevent(Veventlistitem, CalWidget);
 
-    auto mbegin = vevent.ical.lower_bound(today);
-    Caltime tomorrow(CalWidget->year, CalWidget->month, CalWidget->day, 23, 59, 59);
-    auto mend = vevent.ical.upper_bound(tomorrow);
-    int j = 0;
-    for (auto it = mbegin; it != mend; ++it) {
-        std::stringstream sstream;
-        if (it->second->repeat) {
-            auto *item = (VeventRepeat *) it->second;
-            char summary[100];
-            strcpy(summary, item->SUMMARY.c_str());
-            sprintf(Veventlistitem[j], "%02d:%02d:%02d->%02d:%02d:%02d  %s", item->DTSTART.STIME.hour,
-                    item->DTSTART.STIME.minute, item->DTSTART.STIME.second, item->DTEND.STIME.hour,
-                    item->DTEND.STIME.minute, item->DTEND.STIME.second, summary);
-        } else {
-            auto *item = (VeventNoRepeat *) it->second;
-            char summary[100];
-            strcpy(summary, item->SUMMARY.c_str());
-            sprintf(Veventlistitem[j], "%02d:%02d:%02d->%02d:%02d:%02d  %s", item->DTSTART.STIME.hour,
-                    item->DTSTART.STIME.minute, item->DTSTART.STIME.second, item->DTEND.STIME.hour,
-                    item->DTEND.STIME.minute, item->DTEND.STIME.second, summary);
-        }
-        j++;
-    }
-    eraseCDKScroll(Veventwidget);
-    setCDKScroll(Veventwidget, (CDK_CSTRING2) Veventlistitem, j, FALSE, A_REVERSE, TRUE);
-    drawCDKScroll(Veventwidget, TRUE);
+
     return (FALSE);
 
 
 }
-
-
-std::string poptime(const char *title, const char *label, const char *val) {
-    char *charvalue;
-    char temp[256];
-    char *info;
-    char *mixed;
-    const char *Overlay = "____/__/__-__:__:__";
-    const char *plate = "####/##/##-##:##:##";
-    CDKTEMPLATE *cdktemplate = 0;
-
-    cdktemplate = newCDKTemplate(cdkscreen, CENTER, CENTER, title, label, plate, Overlay, TRUE, FALSE);
-    setCDKTemplate(cdktemplate, val, TRUE);
-    info = activateCDKTemplate(cdktemplate, 0);
-    std::string time = info;
-    destroyCDKEntry(cdktemplate);
-    eraseCDKScreen(cdkscreen);
-    refreshCDKScreen(cdkscreen);
-    return time;
-}
-
 
 static int popeventdetailCB(EObjectType cdktype GCC_UNUSED,
                             void *object,
@@ -1034,35 +759,7 @@ static int ImportIcsCB(EObjectType cdktype GCC_UNUSED,
     vevent.ImportIcs(directory);
 
 
-    Caltime today(CalWidget->year, CalWidget->month, CalWidget->day, 0, 0, 0);
-    auto mbegin = vevent.ical.lower_bound(today);
-    Caltime tomorrow(CalWidget->year, CalWidget->month, CalWidget->day, 23, 59, 59);
-    auto mend = vevent.ical.upper_bound(tomorrow);
-    int j = 0;
-    for (auto it = mbegin; it != mend; ++it) {
-        std::stringstream sstream;
-        if (it->second->repeat) {
-            auto *item = (VeventRepeat *) it->second;
-            char summary[100];
-            strcpy(summary, item->SUMMARY.c_str());
-            sprintf(Veventlistitem[j], "%02d:%02d:%02d->%02d:%02d:%02d  %s", item->DTSTART.STIME.hour,
-                    item->DTSTART.STIME.minute, item->DTSTART.STIME.second, item->DTEND.STIME.hour,
-                    item->DTEND.STIME.minute, item->DTEND.STIME.second, summary);
-        } else {
-            auto *item = (VeventNoRepeat *) it->second;
-            char summary[100];
-            strcpy(summary, item->SUMMARY.c_str());
-            sprintf(Veventlistitem[j], "%02d:%02d:%02d->%02d:%02d:%02d  %s", item->DTSTART.STIME.hour,
-                    item->DTSTART.STIME.minute, item->DTSTART.STIME.second, item->DTEND.STIME.hour,
-                    item->DTEND.STIME.minute, item->DTEND.STIME.second, summary);
-        }
-        j++;
-    }
-
-
-    setCDKScroll(Veventwidget, (CDK_CSTRING2) Veventlistitem, j, FALSE, A_REVERSE, TRUE);
-    eraseCDKScroll(Veventwidget);
-    drawCDKScroll(Veventwidget, TRUE);
+    RefreshVevent(Veventlistitem, CalWidget);
 
 
 }
@@ -1088,35 +785,7 @@ static int ImportXlsCB(EObjectType cdktype GCC_UNUSED,
     sscanf(sdate, "%d/%d/%d", &year, &month, &day);
     vevent.ImportExcel(directory, year, month, day);
 
-    Caltime today(CalWidget->year, CalWidget->month, CalWidget->day, 0, 0, 0);
-    auto mbegin = vevent.ical.lower_bound(today);
-    Caltime tomorrow(CalWidget->year, CalWidget->month, CalWidget->day, 23, 59, 59);
-    auto mend = vevent.ical.upper_bound(tomorrow);
-    int j = 0;
-    for (auto it = mbegin; it != mend; ++it) {
-        std::stringstream sstream;
-        if (it->second->repeat) {
-            auto *item = (VeventRepeat *) it->second;
-            char summary[100];
-            strcpy(summary, item->SUMMARY.c_str());
-            sprintf(Veventlistitem[j], "%02d:%02d:%02d->%02d:%02d:%02d  %s", item->DTSTART.STIME.hour,
-                    item->DTSTART.STIME.minute, item->DTSTART.STIME.second, item->DTEND.STIME.hour,
-                    item->DTEND.STIME.minute, item->DTEND.STIME.second, summary);
-        } else {
-            auto *item = (VeventNoRepeat *) it->second;
-            char summary[100];
-            strcpy(summary, item->SUMMARY.c_str());
-            sprintf(Veventlistitem[j], "%02d:%02d:%02d->%02d:%02d:%02d  %s", item->DTSTART.STIME.hour,
-                    item->DTSTART.STIME.minute, item->DTSTART.STIME.second, item->DTEND.STIME.hour,
-                    item->DTEND.STIME.minute, item->DTEND.STIME.second, summary);
-        }
-        j++;
-    }
-
-
-    setCDKScroll(Veventwidget, (CDK_CSTRING2) Veventlistitem, j, FALSE, A_REVERSE, TRUE);
-    eraseCDKScroll(Veventwidget);
-    drawCDKScroll(Veventwidget, TRUE);
+    RefreshVevent(Veventlistitem, CalWidget);
 
 
 }
@@ -1226,6 +895,157 @@ static int TodolisthelpCB(EObjectType cdktype GCC_UNUSED,
     popupLabel(cdkscreen, msg, 17);
 }
 
+int UpdateVeventItem(int day, int month, int year, char *const *Veventlistitem) {
+    Caltime today(year, month, day, 0, 0, 0);
+
+    auto mbegin = vevent.ical.lower_bound(today);
+    Caltime tomorrow(year, month, day, 23, 59, 59);
+    auto mend = vevent.ical.upper_bound(tomorrow);
+    int j = 0;
+    for (auto it = mbegin; it != mend; ++it) {
+        stringstream sstream;
+        if (it->second->repeat) {
+            auto *item = (VeventRepeat *) it->second;
+            char summary[100];
+            strcpy(summary, item->SUMMARY.c_str());
+            sprintf(Veventlistitem[j], "%02d:%02d:%02d->%02d:%02d:%02d  %s", item->DTSTART.STIME.hour,
+                    item->DTSTART.STIME.minute, item->DTSTART.STIME.second, item->DTEND.STIME.hour,
+                    item->DTEND.STIME.minute, item->DTEND.STIME.second, summary);
+        } else {
+            auto *item = (VeventNoRepeat *) it->second;
+            char summary[100];
+            strcpy(summary, item->SUMMARY.c_str());
+            sprintf(Veventlistitem[j], "%02d:%02d:%02d->%02d:%02d:%02d  %s", item->DTSTART.STIME.hour,
+                    item->DTSTART.STIME.minute, item->DTSTART.STIME.second, item->DTEND.STIME.hour,
+                    item->DTEND.STIME.minute, item->DTEND.STIME.second, summary);
+        }
+        j++;
+    }
+    return j;
+}
+
+void DeleteVeventItem(
+        const multimap<Caltime, Vevent *, std::less<Caltime>, std::allocator<std::pair<Caltime, Vevent *>>>::iterator &deleteitem) {
+    if (deleteitem->second->repeat) {
+        VeventRepeat *deleterepeat = (VeventRepeat *) deleteitem->second;
+        Caltime deletetime = deleterepeat->DTSTART.STIME;
+        for (int i = 0; i < deleterepeat->RRULE.COUNT; ++i) {
+            auto pair2 = vevent.ical.equal_range(deletetime);
+            for (auto j = pair2.first; j != pair2.second; j++) {
+                if (j->second == deleterepeat) {
+                    vevent.ical.erase(j);
+                    break;
+                }
+            }
+            deletetime.AddDay(deleterepeat->RRULE.FREQ);
+        }
+        delete deleterepeat;
+    } else {
+        VeventNoRepeat *deletenorepeat = (VeventNoRepeat *) deleteitem->second;
+        Caltime deletetime = deletenorepeat->DTSTART.STIME;
+        auto pair2 = vevent.ical.equal_range(deletetime);
+        for (auto j = pair2.first; j != pair2.second; j++) {
+            if (j->second == deletenorepeat) {
+                vevent.ical.erase(j);
+                break;
+            }
+        }
+        delete deletenorepeat;
+    }
+}
+
+
+void RefreshVevent(char *const *Veventlistitem, const CDKCALENDAR *calendar) {
+    int j = UpdateVeventItem(calendar->year, calendar->month, calendar->day, Veventlistitem);
+    eraseCDKScroll(Veventwidget);
+    setCDKScroll(Veventwidget, (CDK_CSTRING2) Veventlistitem, j, FALSE, A_REVERSE, TRUE);
+    drawCDKScroll(Veventwidget, TRUE);
+}
+
+void RefreshTodolist(char *const *todolistitem) {
+    int i = 0;
+    for (auto &it:todolist.v) {
+        stringstream sstream;
+        sstream << it.first << " " << it.second << endl;
+        sstream.getline(todolistitem[i], VECTORLENGTH);
+        i++;
+    }
+    eraseCDKScroll(Todolistwidget);
+    setCDKScroll(Todolistwidget, (CDK_CSTRING2) todolistitem, i, FALSE, A_REVERSE, TRUE);
+    drawCDKScroll(Todolistwidget, TRUE);
+}
+
+
+std::string popentry(const char *title, const char *label) {
+    char *charvalue;
+    char temp[256];
+
+    CDKENTRY *entry = 0;
+
+    entry = newCDKEntry(cdkscreen, CENTER, CENTER, title, label, A_NORMAL, '_', vMIXED, 40, 0, 256, TRUE, FALSE);
+    charvalue = activateCDKEntry(entry, 0);
+    std::string svalue = charvalue;
+    destroyCDKEntry(entry);
+    eraseCDKScreen(cdkscreen);
+    refreshCDKScreen(cdkscreen);
+    return svalue;
+}
+
+std::string popentry(const char *title, const char *label, const char *val) {
+    char *charvalue;
+    char temp[256];
+
+    CDKENTRY *entry = 0;
+
+    entry = newCDKEntry(cdkscreen, CENTER, CENTER, title, label, A_NORMAL, '_', vMIXED, 40, 0, 256, TRUE, FALSE);
+    setCDKEntry(entry, val, 0, 256, TRUE);
+    charvalue = activateCDKEntry(entry, 0);
+    std::string svalue = charvalue;
+    destroyCDKEntry(entry);
+    eraseCDKScreen(cdkscreen);
+    refreshCDKScreen(cdkscreen);
+    return svalue;
+}
+
+std::string poptime(const char *title, const char *label) {
+    char *charvalue;
+    char temp[256];
+    char *info;
+    char *mixed;
+    const char *Overlay = "____/__/__-__:__:__";
+    const char *plate = "####/##/##-##:##:##";
+    CDKTEMPLATE *cdktemplate = 0;
+
+    cdktemplate = newCDKTemplate(cdkscreen, CENTER, CENTER, title, label, plate, Overlay, TRUE, FALSE);
+    info = activateCDKTemplate(cdktemplate, 0);
+    std::string time = info;
+    destroyCDKEntry(cdktemplate);
+    eraseCDKScreen(cdkscreen);
+    refreshCDKScreen(cdkscreen);
+    return time;
+}
+
+
+std::string poptime(const char *title, const char *label, const char *val) {
+    char *charvalue;
+    char temp[256];
+    char *info;
+    char *mixed;
+    const char *Overlay = "____/__/__-__:__:__";
+    const char *plate = "####/##/##-##:##:##";
+    CDKTEMPLATE *cdktemplate = 0;
+
+    cdktemplate = newCDKTemplate(cdkscreen, CENTER, CENTER, title, label, plate, Overlay, TRUE, FALSE);
+    setCDKTemplate(cdktemplate, val, TRUE);
+    info = activateCDKTemplate(cdktemplate, 0);
+    std::string time = info;
+    destroyCDKEntry(cdktemplate);
+    eraseCDKScreen(cdkscreen);
+    refreshCDKScreen(cdkscreen);
+    return time;
+}
+
+
 std::string popdate(const char *title, const char *label) {
     char *charvalue;
     char temp[256];
@@ -1243,4 +1063,15 @@ std::string popdate(const char *title, const char *label) {
     eraseCDKScreen(cdkscreen);
     refreshCDKScreen(cdkscreen);
     return time;
+}
+
+int popscale(const char *title, const char *label) {
+    CDKSCALE *importance = 0;
+    int iimport;
+    importance = newCDKScale(cdkscreen, CENTER, CENTER, title, label, A_NORMAL, 5, 1, 1, 9, 1, 2, TRUE, FALSE);
+    iimport = activateCDKScale(importance, 0);
+    destroyCDKScale(importance);
+    eraseCDKScreen(cdkscreen);
+    refreshCDKScreen(cdkscreen);
+    return iimport;
 }
