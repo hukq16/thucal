@@ -5,7 +5,7 @@
 
 ## 二、安装
 
-要求：linux系统（测试系统为ubuntu/debian）cmake版本为3.5及以上，有c++编译环境
+要求：linux系统（测试系统为ubuntu16.04/debian9）cmake版本为3.5及以上，有c++编译环境
 
 1. 安装依赖
 
@@ -47,7 +47,7 @@
    下载源码，安装
 
    ```bash
-   git clone https://git.tsinghua.edu.cn/hukq16/thucal.git
+   git clone https://github.com/glintligo/thucal.git
    cd thucal
    cmake .
    make
